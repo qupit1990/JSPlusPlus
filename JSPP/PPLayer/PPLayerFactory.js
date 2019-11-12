@@ -36,7 +36,8 @@
   let private = {
     static: {
       instance: null,
-      ccsPathMap: {}
+      ccsPathMap: {},
+      //textureListMap:{}
     },
     PPLayerFactory: function () {
 

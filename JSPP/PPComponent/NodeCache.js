@@ -13,11 +13,6 @@
  * 通过对象池向 fathernode 上添加新的node
  * NodeCache.addnode(fathernode)
  *
- * 设置数据列表和数据使用方法
- * scrollviewEx.setDataList(tmplist, function (index, item, data) {
- *    每一个item如何使用data正确显示
- * })
- *
  */
 (function () {
   if (!window.JSPP) return
@@ -41,7 +36,7 @@
       this.templateNode = nodeone
       this.templateNode.setVisible(false)
 
-      this._dataInitFunction = initFunction
+      this.dataInitFunction = initFunction
     },
     _NodeCache: function () {
       for (let index in this.newNodeList) {

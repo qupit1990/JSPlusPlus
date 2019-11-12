@@ -17,7 +17,10 @@
  * scrollviewEx.setContentSize(cc.size(w,h))
  *
  * 设置数据列表和数据使用方法
- * scrollviewEx.setDataList(tmplist, function (index, item, data) {
+ * @param tmplist 显示用数据数组
+ * @param bstatic 是否保持原位显示,（可省略）默认否
+ * @param function 用于刷新按钮的方法,（可省略）默认使用上次传入的
+ * scrollviewEx.setDataList(tmplist, bstatic, function (index, item, data) {
  *    每一个item如何使用data正确显示
  * })
  *
@@ -121,11 +124,18 @@
       }
     },
     //设置使用的数据
-    setDataList: function (dataList, dataFunction) {
+    setDataList: function (dataList, keepStatic, dataFunction) {
       if (!dataList instanceof Array) return
       this._dataList = dataList
+      if (!dataFunction && typeof keepStatic === 'function') {
+        dataFunction = keepStatic
+        keepStatic = undefined
+      }
       if (dataFunction) this._dataChangeFunction = dataFunction
 
+      this.scrollNode.stopAutoScroll()
+
+      let oldMaxRange = this._maxRange
       for (let i = 0; i < this._childrenList.length; i++) {
         let item = this._childrenList[i]
         item._showingindex = undefined
@@ -144,20 +154,39 @@
       } else {
         this._maxRange = this._itemSpase * 2 + dataList.length * this._itemMinRange
       }
-      let containerSize = this.scrollNode.getInnerContainerSize()
-      if (this._towards == 0) {
-        this.scrollNode.setInnerContainerSize(cc.size(this._maxRange, containerSize.height))
-        if (this._maxRange > this._showRange)
-          this.scrollNode.setInnerContainerPosition(cc.p(this._showRange - this._maxRange, 0))
-      } else if (this._towards == 1) {
-        this.scrollNode.setInnerContainerSize(cc.size(containerSize.width, this._maxRange))
-        if (this._maxRange > this._showRange)
-          this.scrollNode.setInnerContainerPosition(cc.p(0, this._showRange - this._maxRange))
-      }
 
-      this.scrollNode.stopAutoScroll()
+      let containerPos = this.scrollNode.getInnerContainerPosition()
+      let containerSize = this.scrollNode.getInnerContainerSize()
 
       this._refreshItemAll(0)
+
+      if (keepStatic === true) { //处理异常情况
+        cc.log('Static Check oldMaxRange =' + oldMaxRange + ' now =' + this._showRange)
+        keepStatic = (oldMaxRange && oldMaxRange > this._showRange && this._maxRange > this._showRange)
+      }
+
+      if (this._towards == 0) {
+        this.scrollNode.setInnerContainerSize(cc.size(this._maxRange, containerSize.height))
+        if (keepStatic) {
+          cc.log('Static Check oldcontainerPos.x =' + containerPos.x)
+          containerPos.x = containerPos.x / (oldMaxRange - this._showRange) * (this._maxRange - this._showRange)
+          cc.log('Static Check containerPos.x =' + containerPos.x)
+          this.scrollNode.setInnerContainerPosition(containerPos)
+        } else if (this._maxRange > this._showRange) {
+          this.scrollNode.setInnerContainerPosition(cc.p(this._showRange - this._maxRange, 0))
+        }
+      } else if (this._towards == 1) {
+        this.scrollNode.setInnerContainerSize(cc.size(containerSize.width, this._maxRange))
+        if (keepStatic) {
+          cc.log('Static Check oldcontainerPos.y =' + containerPos.y)
+          containerPos.y = containerPos.y / (oldMaxRange - this._showRange) * (this._maxRange - this._showRange)
+          cc.log('Static Check containerPos.y =' + containerPos.y)
+          this.scrollNode.setInnerContainerPosition(containerPos)
+        } else if (this._maxRange > this._showRange) {
+          this.scrollNode.setInnerContainerPosition(cc.p(0, this._showRange - this._maxRange))
+        }
+      }
+
     },
     addDataList: function (dataList) {
       if (!dataList instanceof Array) return

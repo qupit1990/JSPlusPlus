@@ -79,16 +79,16 @@
 
       let relationWordBox = this.getNodeBycfgKey('relationWordBox')
       let bgSize = relationWordBox.getContentSize()
-      this.inputBox = GuildUtil.editBoxCreate(cc.size(bgSize.width * 0.9, bgSize.height * 0.8), '', 6, '请输入ID')
-      this.inputBox.setName('input_ScoreId')
-      this.inputBox.setInputFlag(cc.EDITBOX_INPUT_FLAG_SENSITIVE)
-      this.inputBox.setInputMode(cc.EDITBOX_INPUT_MODE_NUMERIC)
-      this.inputBox.setPosition(bgSize.width / 2 * 0.9, bgSize.height / 2)
-      this.inputBox.setFontColor(cc.color(0xb2, 0xb2, 0xb2, 255))
-      this.inputBox.setPlaceholderFontColor(cc.color(0xb2, 0xb2, 0xb2, 255))
-      this.inputBox.setDelegate({
+      this.relationInputBox = GuildUtil.editBoxCreate(cc.size(bgSize.width * 0.9, bgSize.height * 0.8), '', 6, '请输入ID')
+      this.relationInputBox.setName('input_ScoreId')
+      this.relationInputBox.setInputFlag(cc.EDITBOX_INPUT_FLAG_SENSITIVE)
+      this.relationInputBox.setInputMode(cc.EDITBOX_INPUT_MODE_NUMERIC)
+      this.relationInputBox.setPosition(bgSize.width / 2 * 0.9, bgSize.height / 2)
+      this.relationInputBox.setFontColor(cc.color(0xb2, 0xb2, 0xb2, 255))
+      this.relationInputBox.setPlaceholderFontColor(cc.color(0xb2, 0xb2, 0xb2, 255))
+      this.relationInputBox.setDelegate({
         editBoxEditingDidBegin: JSPP.ppfunction(function (editBox) {
-          this.inputBox.setString('')
+          this.relationInputBox.setString('')
           this.relationselEx.setDataList([{}].concat(this.relationInfo))
         }, this),
         editBoxEditingDidEnd: JSPP.ppfunction(function (editBox) {
@@ -96,7 +96,7 @@
         }, this),
         editBoxTextChanged: JSPP.ppfunction(function (editBox, text) {
           if (text) {
-            let relationList = this.getRelationListByKey(this.relationInfo, this.inputBox.string)
+            let relationList = this.getRelationListByKey(this.relationInfo, this.relationInputBox.string)
             this.relationselEx.setDataList(relationList)
           } else {
             this.relationselEx.setDataList([{}].concat(this.relationInfo))
@@ -105,7 +105,7 @@
         editBoxReturn: JSPP.ppfunction(function (editBox) {
         }, this)
       })
-      relationWordBox.addChild(this.inputBox)
+      relationWordBox.addChild(this.relationInputBox)
 
       let relationScroll = this.getNodeBycfgKey('relationScroll')
       let relationScrollbtn = this.getNodeBycfgKey('relationScrollbtn')
@@ -252,6 +252,8 @@
     inputBox: null,
     // 玩法选择菜单
     floorlistEx: null,
+    // 合伙人搜索输入框
+    relationInputBox: null,
     // 合伙人菜单
     relationselEx: null,
     // 合伙人缓存数据
@@ -599,11 +601,11 @@
       },
       relationSearch: function () {
         if (!this.relationInfo) return
-        let relationList = this.getRelationListByKey(this.relationInfo, this.inputBox.string)
+        let relationList = this.getRelationListByKey(this.relationInfo, this.relationInputBox.string)
         if (relationList.length <= 0) {
           relationList = [{}].concat(this.relationInfo)
-          if (this.inputBox.string) {
-            this.inputBox.setString('')
+          if (this.relationInputBox.string) {
+            this.relationInputBox.setString('')
             utils.showFloatMsg('对不起，没有符合条件的信息！')
           }
         }
@@ -611,7 +613,7 @@
       },
       onRelationChange: function (data) {
         this.relationInfo = data.info
-        let relationList = this.getRelationListByKey(this.relationInfo, this.inputBox.string)
+        let relationList = this.getRelationListByKey(this.relationInfo, this.relationInputBox.string)
         if (relationList.length <= 0)
           relationList = [{}].concat(this.relationInfo)
         this.relationselEx.setDataList(relationList)
@@ -628,7 +630,11 @@
       updateRelationList: function (index, item, data) {
         let selectBg = item.getChildByName('onSelectbg')
 
-        selectBg.setVisible(this.relationselect && this.relationselect.uid === data.uid)
+        if (this.viewParam.relationselect){
+          selectBg.setVisible(this.viewParam.relationselect.uid === data.uid)
+        }else{
+          selectBg.setVisible(undefined === data.uid)
+        }
 
         let headbg = item.getChildByName('headimage')
         let itemidText = item.getChildByName('textID')
@@ -696,7 +702,11 @@
       },
       updateFloorList: function (index, item, data) {
         let selectBg = item.getChildByName('onSelectbg')
-        selectBg.setVisible(this.floorselect === data)
+        if (this.viewParam.floorselect){
+          selectBg.setVisible(this.viewParam.floorselect.floorindex === data)
+        }else{
+          selectBg.setVisible(0 === data)
+        }
 
         let itemName = item.getChildByName('textname')
         let floorName = '全部'

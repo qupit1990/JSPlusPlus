@@ -283,16 +283,25 @@
       static: function () {
         this.headFileCache = utils.localStorage.getDataForKey('PPCacheHeadFile') || {}
         let TargetPath = jsb.fileUtils.getWritablePath() + 'headCache/'
-        jsb.fileUtils.isDirectoryExist(TargetPath, JSPP.ppfunction(function (bExist) {
-          if (bExist) {
-            this.HeadSavePath = TargetPath
-            return
-          }
+        try{ // 尝试使用异步检测
+          jsb.fileUtils.isDirectoryExist(TargetPath, JSPP.ppfunction(function (bExist) {
+            if (bExist) {
+              this.HeadSavePath = TargetPath
+              return
+            }
 
-          jsb.fileUtils.createDirectory(TargetPath, JSPP.ppfunction(function () {
-            this.HeadSavePath = TargetPath
+            jsb.fileUtils.createDirectory(TargetPath, JSPP.ppfunction(function () {
+              this.HeadSavePath = TargetPath
+            }, this))
           }, this))
-        }, this))
+        }catch (e) { // 失败则使用同步模式检测
+          if (jsb.fileUtils.isDirectoryExist(TargetPath)){
+            this.HeadSavePath = TargetPath
+          }else{
+            jsb.fileUtils.createDirectory(TargetPath)
+            this.HeadSavePath = TargetPath
+          }
+        }
       },
       // 当有值时。路径已经成功创建
       HeadSavePath: null,

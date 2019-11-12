@@ -68,6 +68,13 @@
       this.sortBtns.WinCount = this.doBindingWithcfgKey('sort_title5', null, 'WinCount')
 
       this.chooseSort('TimeDay')
+      this.statisticsData({
+        dau: 0,
+        moneyUsed: 0,
+        roomCount: 0,
+        roomCount_complete: 0,
+        bigWinnerRoomCount: 0
+      })
     }
 
   }
@@ -113,7 +120,7 @@
       },
       onDataChange: function (msg) {
         this.tmpArray = []
-        this.totalNum = {
+        let totalNum = {
           dau: 0,
           moneyUsed: 0,
           roomCount: 0,
@@ -125,21 +132,21 @@
           let oneData = data[key]
           oneData.uid = key
           this.tmpArray.push(oneData)
-          this.totalNum.dau += oneData.dau
-          this.totalNum.moneyUsed += oneData.moneyUsed
-          this.totalNum.roomCount += oneData.roomCount
-          this.totalNum.roomCount_complete += oneData.roomCount_complete
-          this.totalNum.bigWinnerRoomCount += oneData.bigWinnerRoomCount
+          totalNum.dau += oneData.dau
+          totalNum.moneyUsed += oneData.moneyUsed
+          totalNum.roomCount += oneData.roomCount
+          totalNum.roomCount_complete += oneData.roomCount_complete
+          totalNum.bigWinnerRoomCount += oneData.bigWinnerRoomCount
         }
         this.refreshDataExpend()
-        this.statisticsData()
+        this.statisticsData(totalNum)
       },
-      statisticsData: function () {
-        this.getNodeBycfgKey('totalActiveText').setString(this.totalNum.dau)
-        this.getNodeBycfgKey('totalExpendText').setString(this.totalNum.moneyUsed)
-        this.getNodeBycfgKey('totalNumText').setString(this.totalNum.roomCount)
-        this.getNodeBycfgKey('totalFullText').setString(this.totalNum.roomCount_complete)
-        this.getNodeBycfgKey('totalBigWinnerText').setString(this.totalNum.bigWinnerRoomCount)
+      statisticsData: function (totalNum) {
+        this.getNodeBycfgKey('totalActiveText').setString(totalNum.dau)
+        this.getNodeBycfgKey('totalExpendText').setString(totalNum.moneyUsed)
+        this.getNodeBycfgKey('totalNumText').setString(totalNum.roomCount)
+        this.getNodeBycfgKey('totalFullText').setString(totalNum.roomCount_complete)
+        this.getNodeBycfgKey('totalBigWinnerText').setString(totalNum.bigWinnerRoomCount)
       },
       refreshDataExpend: function () {
         let sortType = this.sortselect
@@ -208,14 +215,6 @@
     scrollviewEx: null,
     // 列表数据缓存
     tmpArray: [],
-    // 统计数据缓存
-    totalNum: {
-      dau: 0,
-      moneyUsed: 0,
-      roomCount: 0,
-      roomCount_complete: 0,
-      bigWinnerRoomCount: 0
-    }
   }
 
   JSPP.ppclass('GuildExpendLayer', 'GuildRecordViewBase', public, protected, private)

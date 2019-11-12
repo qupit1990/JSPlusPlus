@@ -34,6 +34,12 @@ var _public ={
 
 var _protected ={
 	static:{
+		static:function(){
+			console.log('[classA] static is Init')
+		}
+		_static:function(){
+			console.log('[classA] static is Delete')
+		}
 		pt_s_function:function(){
 			console.log('[classA] called pt_s_function')
 		}

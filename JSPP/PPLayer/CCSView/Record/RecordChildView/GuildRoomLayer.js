@@ -103,12 +103,11 @@
       }, 0)
 
       this.peopleNodeCache = JSPP.ppnew('NodeCache', this.getNodeBycfgKey('playeritem'), function (item, template) {
-        let playeritem = item.getChildByName('player' + i)
-        let headnode = playeritem.getChildByName('plIcon')
-        //初始化一个urlNode记录值
-        headnode.URLNode = undefined
+        let headBg = item.getChildByName('plIcon')
+        item.headnode = JSPP.ppnew('CacheHeadNode',headBg)
+        item.headnode.getRootNode().setScale(0.96)
 
-        let scoreImgText = playeritem.getChildByName('plScore')
+        let scoreImgText = item.getChildByName('plScore')
         scoreImgText.ignoreContentAdaptWithSize(true)
       })
       // 初始化30个对象
@@ -179,9 +178,9 @@
             let headbg = this.getNodeBycfgKey('playerInfoNode').getChildByName('icon')
             if (!headbg.headnode){
               headbg.headnode = JSPP.ppnew('CacheHeadNode',headbg)
+              headbg.headnode.getRootNode().setScale(0.96)
             }
             headbg.headnode.setHeadInfo(data.uid, data.headimgurl)
-            headbg.headnode.getRootNode().setScale(0.96)
 
             let nameText = this.getNodeBycfgKey('playerInfoNode').getChildByName('name')
             let nickName = ''
@@ -196,9 +195,9 @@
             let headBg = this.getNodeBycfgKey('playerInfoNode').getChildByName('icon')
             if (!headBg.headnode){
               headBg.headnode = JSPP.ppnew('CacheHeadNode',headBg)
+              headBg.headnode.getRootNode().setScale(0.96)
             }
             headBg.headnode.setHeadInfo(this.searchingId, data.userStatistics.headimgurl)
-            headBg.headnode.getRootNode().setScale(0.96)
 
             let nameText = this.getNodeBycfgKey('playerInfoNode').getChildByName('name')
             let nickName = ''
@@ -279,6 +278,9 @@
           let peoplenode = this.peopleNodeCache.addnode(playerpanel)
           peoplenode.setPosition(cc.p(size.width * (i % 4), MaxH - size.height - size.height * Math.floor(i / 4)))
           this.updatePlayer(peoplenode, playerData, data.owner)
+          if (i % 4 === 3) {
+            peoplenode.getChildByName('curline').setVisible(false)
+          }
         }
 
         // 设置点击事件
@@ -301,21 +303,16 @@
           playernode.setVisible(false)
           return
         }
-
         playernode.setVisible(true)
 
-        let headBg = playernode.getChildByName('plIcon')
-        if (!headBg.headnode){
-          headBg.headnode = JSPP.ppnew('CacheHeadNode',headBg)
-        }
-        headBg.headnode.setHeadInfo(data.uid, data.headimgurl)
-        headBg.headnode.getRootNode().setScale(0.96)
+        playernode.headnode.setHeadInfo(data.uid, data.headimgurl)
 
         // 合群没有房主
         // let ownerImg = headBg.getChildByName('plOwner')
         // ownerImg.setVisible(data.uid == ownerid)
         // ownerImg.setLocalZOrder(10)
 
+        let headBg = playernode.getChildByName('plIcon')
         let winnerImg = headBg.getChildByName('big_winner')
         winnerImg.setVisible(data.isBigWinner)
         winnerImg.setLocalZOrder(10)
@@ -340,6 +337,12 @@
           fileName = numImg[1]
         }
         scoreImgText.setProperty(strScore, fileName, 20, 34, '+')
+        playernode.getChildByName('cpsCost').setVisible(data.isBigWinner)
+        playernode.getChildByName('cpsBg').setVisible(data.isBigWinner)
+        if (data.isBigWinner) {
+          playernode.getChildByName('cpsCost').setString('消耗:' + data.cpsCost)
+        }
+
 
       }
     }
