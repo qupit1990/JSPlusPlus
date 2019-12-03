@@ -2,7 +2,7 @@
 * B64 通用库
 */
 
-(function () {
+JSPP.ppinclude(function (__filepath__) {"use strict"
   let _keyStr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
 
   function _utf8_encode (e) {
@@ -110,4 +110,4 @@
     }
   }, {}, {})
 
-})()
+})

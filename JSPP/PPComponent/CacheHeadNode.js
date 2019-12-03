@@ -5,7 +5,7 @@
 *  // 创建时需要传入底板图片节点
 *  playerNode.HeadCachedCtrl = JSPP.ppnew('CacheHeadNode', headBg)
 *  // 设置clip模式 支持多次重置
-*  playerNode.HeadCachedCtrl.setClip(GuildResourceConfig.picName.guildDefaultCircleMask)
+*  playerNode.HeadCachedCtrl.setClip(JSPP.ppstatic('GuildUtilsConfig').getInstance().getUtilsConfig('HeadNodeCircleClip'))
 *  // 移除clip模式
 *  playerNode.HeadCachedCtrl.removeClip()
 *  // 设置头像 支持多次重置
@@ -15,32 +15,31 @@
 *
 */
 
-(function () {
-  if (!window.JSPP) return
+JSPP.ppinclude([
+  ':/PPData/GuildUtilsConfig.js',
+  ':/PPFrameWork/MD5.js',
+  ':/PPFrameWork/Base64.js'
+], function (__filepath__) {
+  "use strict"
 
-  JSPP.ppinclude(
-    ':/PPFrameWork/MD5.js',
-    ':/PPFrameWork/Base64.js'
-  )
-
-  let DefaultHead = include('Game/ResourceConfig').DEFALUTHEAD
-
-  let public = {
+  let __public__ = {
     static: {
-      clearCache: function () {
-        if (this.HeadSavePath) {
-          jsb.fileUtils.isDirectoryExist(this.HeadSavePath, JSPP.ppfunction(function (bExist) {
-            if (bExist) {
-              jsb.fileUtils.removeDirectory(this.HeadSavePath, JSPP.ppfunction(function () {
-                jsb.fileUtils.createDirectory(this.HeadSavePath, function () {})
-              }, this))
-            } else {
-              jsb.fileUtils.createDirectory(this.HeadSavePath, function () {})
-            }
-          }, this))
+      clearCache: function (bDeleteFiles) {
+        if (bDeleteFiles === true) {
+          if (this.HeadSavePath) {
+            jsb.fileUtils.isDirectoryExist(this.HeadSavePath, JSPP.ppfunction(function (bExist) {
+              if (bExist) {
+                jsb.fileUtils.removeDirectory(this.HeadSavePath, JSPP.ppfunction(function () {
+                  jsb.fileUtils.createDirectory(this.HeadSavePath, function () { })
+                }, this))
+              } else {
+                jsb.fileUtils.createDirectory(this.HeadSavePath, function () { })
+              }
+            }, this))
+          }
+          this.headFileCache = {}
+          utils.localStorage.setDataForKey('PPCacheHeadFile', this.headFileCache)
         }
-        this.headFileCache = {}
-        utils.localStorage.setDataForKey('PPCacheHeadFile', this.headFileCache)
         this.headTextureCache = {}
       }
     },
@@ -69,6 +68,8 @@
     },
     // 设置头像显示信息
     setHeadInfo: function (uid, url) {
+      if (url === null)
+        url = ''
       this.showingUid = uid
       if (this.showingUrl === url) {
         return
@@ -77,11 +78,11 @@
 
       if (!url || url.length <= 4 || url.substring(0, 4) !== 'http') {
         // 非正常的Url 直接使用默认头像
-        if (this.showingUrl === DefaultHead) {
+        if (this.showingUrl === this.DefaultHead) {
           return
         }
-        this.showingUrl = DefaultHead
-        this.setTextureWithDefault(uid, DefaultHead)
+        this.showingUrl = this.DefaultHead
+        this.setTextureWithDefault(uid, this.DefaultHead)
         return
       }
 
@@ -94,7 +95,7 @@
 
       if (!this.HeadSavePath) {
         //由于创建路径接口移动到异步 如果路径尚未创建成功 先用默认图片显示
-        this.setTextureWithDefault(uid, DefaultHead)
+        this.setTextureWithDefault(uid, this.DefaultHead)
         return
       }
 
@@ -177,7 +178,7 @@
     }
   }
 
-  let protected = {
+  let __protected__ = {
     parentNode: null,
     rootNode: null,
     clipNode: null,
@@ -243,27 +244,51 @@
       }
     },
     setTextureWithDefault: function (uid, url) {
+      //已有纹理
       if (this.defaultTexture) {
+        let defaulttex = cc.spriteFrameCache.getSpriteFrame(this.DefaultHead)
+        if (defaulttex) {
+          if (this.showingUid === uid) {
+            this.setTexture(this.defaultTexture)
+          }
+          return
+        }
+        defaulttex = cc.textureCache.getTextureForKey(this.DefaultHead)
+        if (defaulttex) {
+          if (this.showingUid === uid) {
+            this.setTexture(this.defaultTexture)
+          }
+          return
+        }
+      }
+      //需要加载 优先检查合图缓存
+      let defaulttex = cc.spriteFrameCache.getSpriteFrame(this.DefaultHead)
+      if (defaulttex) {
+        this.defaultTexture = defaulttex
         if (this.showingUid === uid) {
           this.setTexture(this.defaultTexture)
         }
-      } else {
-        let defaultID = uid
-        let defaultUrl = url
-        cc.loader.loadImg(DefaultHead, JSPP.ppfunction(function (option, tex) {
-          if (tex) {
-            this.defaultTexture = tex
-            //this.headTextureCache[defaultID] = [defaultUrl, tex]
-            if (this.showingUid === defaultID) {
-              this.setTexture(tex)
-            }
-          }
-        }, this))
+        return;
       }
+      //都没找到 加载图片纹理
+      let defaultID = uid
+      let defaultUrl = url
+      cc.loader.loadImg(this.DefaultHead, JSPP.ppfunction(function (option, tex) {
+        if (tex) {
+          this.defaultTexture = tex
+          //this.headTextureCache[defaultID] = [defaultUrl, tex]
+          if (this.showingUid === defaultID) {
+            this.setTexture(tex)
+          }
+        }
+      }, this))
     },
     setTexture: function (texture) {
       let newSpr = new cc.Sprite(texture)
-      if (!newSpr) return
+      if (!newSpr) {
+        cc.log('sprite texture error !')
+        return
+      }
       newSpr.setScale((this.parentNode.getContentSize().width / newSpr.getContentSize().width))
       if (this.clipNode) {
         this.clipNode.addChild(newSpr)
@@ -278,12 +303,13 @@
     }
   }
 
-  let private = {
+  let __private__ = {
     static: {
       static: function () {
+        this.DefaultHead = JSPP.ppstatic('GuildUtilsConfig').getInstance().getUtilsConfig('HeadImg')
         this.headFileCache = utils.localStorage.getDataForKey('PPCacheHeadFile') || {}
         let TargetPath = jsb.fileUtils.getWritablePath() + 'headCache/'
-        try{ // 尝试使用异步检测
+        try { // 尝试使用异步检测
           jsb.fileUtils.isDirectoryExist(TargetPath, JSPP.ppfunction(function (bExist) {
             if (bExist) {
               this.HeadSavePath = TargetPath
@@ -294,15 +320,17 @@
               this.HeadSavePath = TargetPath
             }, this))
           }, this))
-        }catch (e) { // 失败则使用同步模式检测
-          if (jsb.fileUtils.isDirectoryExist(TargetPath)){
+        } catch (e) { // 失败则使用同步模式检测
+          if (jsb.fileUtils.isDirectoryExist(TargetPath)) {
             this.HeadSavePath = TargetPath
-          }else{
+          } else {
             jsb.fileUtils.createDirectory(TargetPath)
             this.HeadSavePath = TargetPath
           }
         }
       },
+      // 默认或异常时使用头像
+      DefaultHead: '',
       // 当有值时。路径已经成功创建
       HeadSavePath: null,
       IDWxBadImg: 'WXBadImg',
@@ -313,7 +341,10 @@
       defaultTexture: null,
       getHeadTextureByCache: function (uid, url) {
         if (this.headTextureCache[uid] && this.headTextureCache[uid][0] === url) {
-          return this.headTextureCache[uid][1]
+          let filepath = this.getHeadFilePathByCache(uid, url)
+          if (filepath && cc.textureCache.getTextureForKey(filepath)) {
+            return this.headTextureCache[uid][1]
+          }
         }
         return null
       },
@@ -362,6 +393,7 @@
           } else {
             // 写入文件失败 （手机内存不足）
             if (this.showingUid === downloadIngUid) {
+              let DefaultHead = JSPP.ppstatic('GuildUtilsConfig').getInstance().getUtilsConfig('HeadImg')
               this.showingUrl = DefaultHead
               this.setTextureWithDefault(downloadIngUid, downLoadURl)
             }
@@ -387,6 +419,7 @@
           // 写入文件失败 （手机内存不足）
           this.headFileCache[downloadIngUid] = undefined
           if (this.showingUid === downloadIngUid) {
+            let DefaultHead = JSPP.ppstatic('GuildUtilsConfig').getInstance().getUtilsConfig('HeadImg')
             this.showingUrl = DefaultHead
             this.setTextureWithDefault(downloadIngUid, downLoadURl)
           }
@@ -396,7 +429,7 @@
     downloadFaild: function (downloadIngUid, downLoadURl) {
       cc.error('download headImg Error %s ! => use Default Texture', downLoadURl)
       if (this.showingUid === downloadIngUid) {
-        this.showingUrl = DefaultHead
+        this.showingUrl = this.DefaultHead
         this.setTextureWithDefault(downloadIngUid, downLoadURl)
       }
     },
@@ -435,7 +468,6 @@
     }
   }
 
-  JSPP.ppclass('CacheHeadNode', public, protected, private)
+  JSPP.ppclass('CacheHeadNode', __public__, __protected__, __private__)
 
 })
-()

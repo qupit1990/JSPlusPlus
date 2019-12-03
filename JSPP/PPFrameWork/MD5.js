@@ -21,7 +21,7 @@
 
 /* eslint-disable strict */
 
-(function() {
+JSPP.ppinclude(function(__filepath__) {
   'use strict'
 
   /**
@@ -395,4 +395,4 @@
       }
     }
   }, {}, {})
-})()
+})

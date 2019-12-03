@@ -1,13 +1,26 @@
 //  Created by qupit in 2019/9/25.
 
-(function () {
+JSPP.ppinclude([
+  ':/PPLayer/PPLayerFactory.js',
+  ':/PPData/Record/GuildRecordData.js',
+  ':/PPComponent/CacheHeadNode.js',
+  ':/PPComponent/ScrollViewEx.js',
+  '../GuildRecordViewBase.js'
+  ],function (__filepath__) {"use strict"
 
-  JSPP.ppinclude(
-    ':/PPData/Record/GuildRecordData.js',
-    ':/PPComponent/CacheHeadNode.js',
-    ':/PPComponent/ScrollViewEx.js',
-    '../GuildRecordViewBase.js'
-  )
+  JSPP.ppstatic('PPLayerFactory').getInstance().addKeyDefaultInfo('RecordLayer', 'GuildRecordLayer', 'res/guildRes/GuildRecordMember.csb', {
+
+    sort_title0: { path: 'guildrecordlayout/tilblebg/boxpanel/Checklist_0', function: 'chooseSort' },
+    sort_title1: { path: 'guildrecordlayout/tilblebg/boxpanel/Checklist_1', function: 'chooseSort' },
+    sort_title2: { path: 'guildrecordlayout/tilblebg/boxpanel/Checklist_2', function: 'chooseSort' },
+    sort_title3: { path: 'guildrecordlayout/tilblebg/boxpanel/Checklist_3', function: 'chooseSort' },
+
+    scrollview: { path: 'guildrecordlayout/scrollview' },
+    scrollitem: { path: 'guildrecordlayout/scrollview/recorditem' }
+
+  }, [
+    'res/guildRes/club/common/common'
+  ])
 
   let GuildSortType = { //选中的排序按钮
     TotalScore: 0,
@@ -19,7 +32,7 @@
   let GuildUtil = include('Guild/Utils/GuildUtil')
   let GuildDataManager = include('Guild/Data/GuildDataManager')
 
-  let public = {
+  let __public__ = {
     virtual: {
       _GuildRecordLayer: function () {},
 
@@ -34,7 +47,7 @@
       ChangeReqParam: function (param) {
         if (!this.ppsuper(param)) return false
 
-        JSPP.ppstatic('GuildRecordData').getInstance().requerstGuildRecord(param.floorselect?param.floorselect.floorindex:null, param.relationselect?param.relationselect.uid:null, param.starttime, param.endtime, param.scoreMin, param.scoreMax)
+        JSPP.ppstatic('GuildRecordData').getInstance().requerstGuildRecord(param.floorselect?param.floorselect.floorindex:null, param.relationselect?param.relationselect.uid:null, param.starttime, param.endtime + param.endtimeEx, param.scoreMin, param.scoreMax)
         return true
       },
       TitleSelected: function (viewFrameKey, param) {
@@ -71,7 +84,7 @@
 
   }
 
-  let protected = {
+  let __protected__ = {
     virtual: {
       bindFunctionToNode: function (node, funckey, userdata) {
         let data = userdata
@@ -215,7 +228,7 @@
     }
   }
 
-  let private = {
+  let __private__ = {
     // 选中的排序
     sortselect: GuildSortType.TotalScore,
     // 排序按钮列表
@@ -228,6 +241,6 @@
     tmpArray: []
   }
 
-  JSPP.ppclass('GuildRecordLayer', 'GuildRecordViewBase', public, protected, private)
+  JSPP.ppclass('GuildRecordLayer', 'GuildRecordViewBase', __public__, __protected__, __private__)
 
-})()
+})

@@ -1,24 +1,82 @@
 //  Created by qupit in 2019/9/25.
 
-(function () {
+JSPP.ppinclude([
+  ':/PPComponent/CacheHeadNode.js',
+  ':/PPComponent/EditBoxEx.js',
+  '../../CCSViewBase.js',
+  '../../PPLayerFactory.js',
+  './GuildRecordViewBase.js',
+  ':/PPData/Record/GuildRecordData.js',
+  './RecordChildView/GuildRecordLayer.js',
+  './RecordChildView/GuildRoomLayer.js',
+  './RecordChildView/GuildExpendLayer.js',
+  '../Component/GuildRecordSetTimeLayer.js'
+], function (__filepath__) {
+  'use strict'
 
-  JSPP.ppinclude(
-    ':/PPComponent/CacheHeadNode.js',
-    '../../CCSViewBase.js',
-    '../../PPLayerFactory.js',
-    './GuildRecordViewBase.js',
-    ':/PPData/Record/GuildRecordData.js',
-    './RecordChildView/GuildRecordLayer.js',
-    './RecordChildView/GuildRoomLayer.js',
-    './RecordChildView/GuildExpendLayer.js'
-  )
+  JSPP.ppstatic('PPLayerFactory').getInstance().addKeyDefaultInfo('GuildRecord', 'GuildRecordBackground', 'res/guildRes/GuildRecordBackground.csb', {
+    block: { path: 'block' },
+    Title0: { path: 'background/btnpanel/btn_guild_record', function: 'choosePanel' },
+    Title1: { path: 'background/btnpanel/btn_my_record', function: 'choosePanel' },
+    Title2: { path: 'background/btnpanel/btn_room_record', function: 'choosePanel' },
+    Title3: { path: 'background/btnpanel/btn_others_record', function: 'choosePanel' },
+    Title4: { path: 'background/btnpanel/btn_guild_costs', function: 'choosePanel' },
+    scorebg: { path: 'background/contentbg/scorebg', function: 'chooseScore' },
+    scorebtn: { path: 'background/contentbg/scorebg/button', function: 'chooseScore' },
+    scoreText: { path: 'background/contentbg/scorebg/scoreText' },
+    startTimeText: { path: 'background/contentbg/time_start/time' },
+    endTimeText: { path: 'background/contentbg/time_end/time' },
+    btnChangeS: { path: 'background/contentbg/time_start', function: 'changeDate' },
+    btnChangeE: { path: 'background/contentbg/time_end', function: 'changeDate' },
+    btnYesterday: { path: 'background/contentbg/lastday', function: 'changeDate' },
+    btnToday: { path: 'background/contentbg/today', function: 'changeDate' },
+    btntomorrow: { path: 'background/contentbg/tomorrow', function: 'changeDate' },
 
-  let resArray = [
-    { plist: 'res/guildRes/club/histroy/histroy.plist', png: 'res/guildRes/club/histroy/histroy.png' }
-  ]
+    ChildrenNode: { path: 'background/contentbg/scrollPanel' },
+
+    floorScroll: { path: 'Panel_floor/ScrollViewfloor' },
+    floorScrollbtn: { path: 'Panel_floor/ScrollViewfloor/selitem' },
+
+    levelbg: { path: 'background/contentbg/sub_panel/levelbg', function: 'dropFloorList' },
+    levelbtn: { path: 'background/contentbg/sub_panel/levelbg/selbutton', function: 'dropFloorList' },
+    floortext: { path: 'background/contentbg/sub_panel/levelbg/floortext' },
+
+    relationScroll: { path: 'Panel_relation/Scroll_relation' },
+    relationScrollbtn: { path: 'Panel_relation/Scroll_relation/selitem' },
+
+    relationSearch: { path: 'Panel_relation/searchpanel/searchbtn', function: 'relationSearch' },
+    relationWordBox: { path: 'Panel_relation/searchpanel/searchbar' },
+
+    peoplebg: { path: 'background/contentbg/sub_panel/peoplebg', function: 'dropRelationList' },
+    peoplebtn: { path: 'background/contentbg/sub_panel/peoplebg/sortbutton', function: 'dropRelationList' },
+
+    relationAllText: { path: 'background/contentbg/sub_panel/peoplebg/textall' },
+    relationshowpanel: { path: 'background/contentbg/sub_panel/peoplebg/showpanel' },
+    relationHeadimage: { path: 'background/contentbg/sub_panel/peoplebg/showpanel/headimage' },
+    relationTextName: { path: 'background/contentbg/sub_panel/peoplebg/showpanel/textname' },
+    relationTextID: { path: 'background/contentbg/sub_panel/peoplebg/showpanel/textID' },
+
+    floorselPanel: { path: 'Panel_floor' },
+    relationselPanel: { path: 'Panel_relation' },
+    touchStop: { path: 'Panel_close', function: 'closeAllPanel' },
+
+    costPanel: { path: 'background/contentbg/sub_panel/cost_panel' },
+    guildCount: { path: 'background/contentbg/sub_panel/cost_panel/guildCount' },
+    guildCpsConsume: { path: 'background/contentbg/sub_panel/cost_panel/guildCpsConsume' },
+    guildCpsMoneyBg: { path: 'background/contentbg/sub_panel/cost_panel/cpsMoneyBg' },
+    guildConsume: { path: 'background/contentbg/sub_panel/cost_panel/guildConsume' },
+
+    search_panel: { path: 'background/contentbg/sub_panel/search_panel' },
+    inputBg: { path: 'background/contentbg/sub_panel/search_panel/inputBg' },
+    btnSearch: { path: 'background/contentbg/sub_panel/search_panel/btn_query', function: 'BtnSearch' },
+
+    exit: { path: 'background/btn_x', function: 'closeView' }
+  }, [
+    'res/guildRes/club/common/common',
+    'res/guildRes/club/histroy/histroy'
+  ])
 
   let GuildUtil = include('Guild/Utils/GuildUtil')
-  let DatePickerLayer = include('Guild/UI/Component/DatePicker')
   let GuildResourceConfig = include('Guild/Config/GuildResourceConfig')
   let GuildDataManager = include('Guild/Data/GuildDataManager')
   let PackageConfig = include('Game/PackageConfig')
@@ -31,15 +89,13 @@
     guild_costs: 4
   }
 
-  let public = {
+  let __public__ = {
 
     virtual: {
       _GuildRecordBackground: function () {
-        appInstance.resManager().removeLoadedResByKey(resArray)
       }
     },
     GuildRecordBackground: function (ccpath, cfg) {
-      appInstance.resManager().addResConfig(resArray)
 
       this.doBindingWithcfgKey('exit')
 
@@ -77,35 +133,13 @@
         itemName.ignoreContentAdaptWithSize(true)
       }, undefined, 2)
 
-      let relationWordBox = this.getNodeBycfgKey('relationWordBox')
-      let bgSize = relationWordBox.getContentSize()
-      this.relationInputBox = GuildUtil.editBoxCreate(cc.size(bgSize.width * 0.9, bgSize.height * 0.8), '', 6, '请输入ID')
-      this.relationInputBox.setName('input_ScoreId')
-      this.relationInputBox.setInputFlag(cc.EDITBOX_INPUT_FLAG_SENSITIVE)
-      this.relationInputBox.setInputMode(cc.EDITBOX_INPUT_MODE_NUMERIC)
-      this.relationInputBox.setPosition(bgSize.width / 2 * 0.9, bgSize.height / 2)
-      this.relationInputBox.setFontColor(cc.color(0xb2, 0xb2, 0xb2, 255))
-      this.relationInputBox.setPlaceholderFontColor(cc.color(0xb2, 0xb2, 0xb2, 255))
-      this.relationInputBox.setDelegate({
-        editBoxEditingDidBegin: JSPP.ppfunction(function (editBox) {
-          this.relationInputBox.setString('')
-          this.relationselEx.setDataList([{}].concat(this.relationInfo))
-        }, this),
-        editBoxEditingDidEnd: JSPP.ppfunction(function (editBox) {
-          this.relationSearch()
-        }, this),
-        editBoxTextChanged: JSPP.ppfunction(function (editBox, text) {
-          if (text) {
-            let relationList = this.getRelationListByKey(this.relationInfo, this.relationInputBox.string)
-            this.relationselEx.setDataList(relationList)
-          } else {
-            this.relationselEx.setDataList([{}].concat(this.relationInfo))
-          }
-        }, this),
-        editBoxReturn: JSPP.ppfunction(function (editBox) {
-        }, this)
-      })
-      relationWordBox.addChild(this.relationInputBox)
+      let editBoxEX = JSPP.ppnew('EditBoxEx', this.getNodeBycfgKey('relationWordBox'))
+      editBoxEX.setInputMode(cc.EDITBOX_INPUT_MODE_NUMERIC)
+      editBoxEX.setMaxLength(6)
+      editBoxEX.setEmptyWord('请输入ID')
+      editBoxEX.setFontColor(cc.color(0xb2, 0xb2, 0xb2))
+      editBoxEX.getEditBoxEventDispatcher().registHandler(JSPP.ppfunction(this.OnRelationEditBoxEvent, this), this.listener)
+      this.relationInputBox = editBoxEX
 
       let relationScroll = this.getNodeBycfgKey('relationScroll')
       let relationScrollbtn = this.getNodeBycfgKey('relationScrollbtn')
@@ -130,48 +164,19 @@
       this.doBindingWithcfgKey('touchStop')
       this.doBindingWithcfgKey('btnSearch')
 
-      let inputBg = this.getNodeBycfgKey('inputBg')
-      let pSize = inputBg.getContentSize()
-      this.inputBox = GuildUtil.editBoxCreate(cc.size(pSize.width * 0.9, pSize.height * 0.8), '', 6, '请输入房间ID')
-      this.inputBox.setName('input_roomId')
-      this.inputBox.setInputFlag(cc.EDITBOX_INPUT_FLAG_SENSITIVE)
-      this.inputBox.setInputMode(cc.EDITBOX_INPUT_MODE_NUMERIC)
-      this.inputBox.setPosition(pSize.width / 2 * 0.9, pSize.height / 2)
-      this.inputBox.setFontColor(cc.color(0xb2, 0xb2, 0xb2, 255))
-      this.inputBox.setPlaceholderFontColor(cc.color(0xb2, 0xb2, 0xb2, 255))
-      this.inputBox.setDelegate({
-        editBoxEditingDidBegin: JSPP.ppfunction(function (editBox) {
-          //this.inputBox.setString('')
-        }, this),
-        editBoxEditingDidEnd: JSPP.ppfunction(function (editBox) {
-          if (this.inputBox.getString() === '') {
-            let newParam = this.copyViewParam()
-            newParam.searchString = null
-            if (this.choosedLayer && this.choosedLayer.ChangeReqParam(newParam)) {
-              this.viewParam = newParam
-              this.updateView()
-            }
-          }
-        }, this),
-        editBoxTextChanged: JSPP.ppfunction(function (editBox, text) {
-        }, this),
-        editBoxReturn: JSPP.ppfunction(function (editBox) {
-          if (!this.inputBox.getString()) {
-            let newParam = this.copyViewParam()
-            newParam.searchString = null
-            if (this.choosedLayer && this.choosedLayer.ChangeReqParam(newParam)) {
-              this.viewParam = newParam
-              this.updateView()
-            }
-          }
-        }, this)
-      })
-      inputBg.addChild(this.inputBox)
+      let bgEditBoxEX = JSPP.ppnew('EditBoxEx', this.getNodeBycfgKey('inputBg'))
+      bgEditBoxEX.setInputMode(cc.EDITBOX_INPUT_MODE_NUMERIC)
+      bgEditBoxEX.setMaxLength(6)
+      bgEditBoxEX.setEmptyWord('请输入房间ID')
+      bgEditBoxEX.setFontColor(cc.color(0xb2, 0xb2, 0xb2))
+      bgEditBoxEX.getEditBoxEventDispatcher().registHandler(JSPP.ppfunction(this.OnBgEditBoxEvent, this), this.listener)
+      this.inputBox = bgEditBoxEX
 
       this.closeAllPanel()
 
       this.viewParam.starttime = new Date(new Date().toLocaleDateString()).getTime()
-      this.viewParam.endtime = (new Date()).getTime()
+      this.viewParam.endtime = this.viewParam.starttime
+      this.viewParam.endtimeEx = (new Date()).getTime() - this.viewParam.starttime
       this.viewParam.floorselect = { floorindex: 0, floorName: '全部' }
       this.viewParam.scoreMin = 0
       this.viewParam.scoreMax = null
@@ -213,7 +218,7 @@
     }
   }
 
-  let protected = {
+  let __protected__ = {
     // 选中的按钮
     choosedPanelBtn: null,
     // 显示中的layer
@@ -244,6 +249,7 @@
       scoreMax: null,
       starttime: null,
       endtime: null,
+      endtimeEx: null,
       searchString: null
     },
     //标题页列表
@@ -303,7 +309,7 @@
                     this.changeDateStart()
                     break
                   case 'End':
-                    this.changeDateEnd()
+                    this.changeDateStart()
                     break
                 }
               }
@@ -352,6 +358,53 @@
       onEnter: function () {
         this.ppsuper()
         this.doLayout(this.rootnode)
+      },
+
+      OnRelationEditBoxEvent: function (eventType, text) {
+        let evtTypes = JSPP.ppstatic('EditBoxEx')
+        switch (eventType) {
+          case evtTypes.Evt_EditBox_EditingDidBegin:
+            this.relationInputBox.setString('')
+            this.relationselEx.setDataList([{}].concat(this.relationInfo))
+            break
+          case evtTypes.Evt_EditBox_EditingDidEnd:
+            this.relationSearch()
+            break
+          case evtTypes.Evt_EditBox_TextChanged:
+            if (text) {
+              let relationList = this.getRelationListByKey(this.relationInfo, this.relationInputBox.string)
+              this.relationselEx.setDataList(relationList)
+            } else {
+              this.relationselEx.setDataList([{}].concat(this.relationInfo))
+            }
+            break
+        }
+      },
+
+      OnBgEditBoxEvent: function (eventType, text) {
+        let evtTypes = JSPP.ppstatic('EditBoxEx')
+        switch (eventType) {
+          case evtTypes.Evt_EditBox_EditingDidEnd:
+            if (text === '') {
+              let newParam = this.copyViewParam()
+              newParam.searchString = null
+              if (this.choosedLayer && this.choosedLayer.ChangeReqParam(newParam)) {
+                this.viewParam = newParam
+                this.updateView()
+              }
+            }
+            break
+          case evtTypes.Evt_EditBox_Return:
+            if (!text) {
+              let newParam = this.copyViewParam()
+              newParam.searchString = null
+              if (this.choosedLayer && this.choosedLayer.ChangeReqParam(newParam)) {
+                this.viewParam = newParam
+                this.updateView()
+              }
+            }
+            break
+        }
       },
 
       choosePanel: function (titleName, userdata) {
@@ -421,13 +474,13 @@
             this.getNodeBycfgKey('search_panel').setVisible(true)
             this.getNodeBycfgKey('levelbg').setVisible(false)
             this.getNodeBycfgKey('peoplebg').setVisible(false)
-            this.inputBox.setPlaceHolder('请输入房间ID')
+            this.inputBox.setEmptyWord('请输入房间ID')
             this.inputBox.setMaxLength(6)
             if (userdata) {
-              this.inputBox.string = '' + userdata
+              this.inputBox.setString('' + userdata)
               this.viewParam.searchString = '' + userdata
             } else {
-              this.inputBox.string = ''
+              this.inputBox.setString('')
               this.viewParam.searchString = null
             }
             break
@@ -443,13 +496,13 @@
             this.getNodeBycfgKey('search_panel').setVisible(true)
             this.getNodeBycfgKey('levelbg').setVisible(false)
             this.getNodeBycfgKey('peoplebg').setVisible(false)
-            this.inputBox.setPlaceHolder('请输入成员ID')
+            this.inputBox.setEmptyWord('请输入成员ID')
             this.inputBox.setMaxLength(8)
             if (userdata) {
-              this.inputBox.string = '' + userdata
+              this.inputBox.setString('' + userdata)
               this.viewParam.searchString = '' + userdata
             } else {
-              this.inputBox.string = ''
+              this.inputBox.setString('')
               this.viewParam.searchString = null
             }
             break
@@ -478,7 +531,8 @@
           if (this.choosedLayer) {
             if (this.choosedLayer === this.ExpendLayer) {
               this.viewParam.starttime = new Date(new Date().toLocaleDateString()).getTime()
-              this.viewParam.endtime = (new Date()).getTime()
+              this.viewParam.endtime = this.viewParam.starttime
+              this.viewParam.endtimeEx = (new Date()).getTime() - this.viewParam.starttime
               this.updateView()
             }
             this.choosedLayer.HideView()
@@ -488,8 +542,9 @@
             this.choosedLayer.ShowView()
             if (this.choosedLayer === this.ExpendLayer) {
               let oneDayTime = 1000 * 60 * 60 * 24
-              this.viewParam.starttime = (new Date()).getTime() - 7 * oneDayTime
-              this.viewParam.endtime = (new Date()).getTime()
+              this.viewParam.endtime = new Date(new Date().toLocaleDateString()).getTime()
+              this.viewParam.starttime = this.viewParam.endtime - 7 * oneDayTime
+              this.viewParam.endtimeEx = (new Date()).getTime() - this.viewParam.endtime
               this.updateView()
             }
           }
@@ -511,7 +566,7 @@
         selectPara.startInfo.showArrayAppend = []
         selectPara.startInfo.prefix = ''
         selectPara.startInfo.suffix = '分'
-        selectPara.startInfo.selectIndex = this.scoreMin
+        selectPara.startInfo.selectIndex = this.viewParam.scoreMin
         selectPara.endInfo = {}
         selectPara.endInfo.showArrayStart = 0
         selectPara.endInfo.showArrayEnd = 100
@@ -544,26 +599,24 @@
         cc.director.getRunningScene().addChild(selectPicker)
       },
       changeDateStart: function () {
-        let datePickerLayer = appInstance.uiManager().createPopUI(DatePickerLayer, this.viewParam.starttime, JSPP.ppfunction(function (time) {
+        let RecordSetTimeLayer = JSPP.ppstatic('PPLayerFactory').getInstance().createCCSView('RecordSetTimeLayer')
+        RecordSetTimeLayer.setCallBack(JSPP.ppfunction(function (para) {
           let newParam = this.copyViewParam()
-          newParam.starttime = time
+          newParam.starttime = para.startTimeArr
+          newParam.endtime = para.endTimeArr
           if (this.choosedLayer && this.choosedLayer.ChangeReqParam(newParam)) {
             this.viewParam = newParam
             this.updateView()
           }
         }, this))
-        cc.director.getRunningScene().addChild(datePickerLayer)
-      },
-      changeDateEnd: function () {
-        let datePickerLayer = appInstance.uiManager().createPopUI(DatePickerLayer, this.viewParam.endtime, JSPP.ppfunction(function (time) {
-          let newParam = this.copyViewParam()
-          newParam.endtime = time
-          if (this.choosedLayer && this.choosedLayer.ChangeReqParam(newParam)) {
-            this.viewParam = newParam
-            this.updateView()
-          }
-        }, this))
-        cc.director.getRunningScene().addChild(datePickerLayer)
+        RecordSetTimeLayer.setShowDate(this.viewParam.starttime, this.viewParam.endtime)
+        if (this.choosedLayer === this.ExpendLayer) {
+          RecordSetTimeLayer.setDateTime(30)
+        } else {
+          RecordSetTimeLayer.setDateTime(7)
+        }
+        RecordSetTimeLayer.addToParent(this)
+
       },
       changeDateby: function (dt) {
         let oneDayTime = 1000 * 60 * 60 * 24
@@ -578,7 +631,8 @@
       resetDateNow: function () {
         let newParam = this.copyViewParam()
         newParam.starttime = new Date(new Date().toLocaleDateString()).getTime()
-        newParam.endtime = (new Date()).getTime()
+        newParam.endtime = newParam.starttime
+        newParam.endtimeEx = (new Date()).getTime() - newParam.starttime
         if (this.choosedLayer && this.choosedLayer.ChangeReqParam(newParam)) {
           this.viewParam = newParam
           this.updateView()
@@ -630,9 +684,9 @@
       updateRelationList: function (index, item, data) {
         let selectBg = item.getChildByName('onSelectbg')
 
-        if (this.viewParam.relationselect){
+        if (this.viewParam.relationselect) {
           selectBg.setVisible(this.viewParam.relationselect.uid === data.uid)
-        }else{
+        } else {
           selectBg.setVisible(undefined === data.uid)
         }
 
@@ -646,8 +700,8 @@
           itemNameText.setVisible(true)
           itemAllText.setVisible(false)
 
-          if (!headbg.headnode){
-            headbg.headnode = JSPP.ppnew('CacheHeadNode',headbg)
+          if (!headbg.headnode) {
+            headbg.headnode = JSPP.ppnew('CacheHeadNode', headbg)
           }
           headbg.headnode.setHeadInfo(data.uid, data.headimgurl)
           headbg.headnode.getRootNode().setScale(0.96)
@@ -702,9 +756,9 @@
       },
       updateFloorList: function (index, item, data) {
         let selectBg = item.getChildByName('onSelectbg')
-        if (this.viewParam.floorselect){
+        if (this.viewParam.floorselect) {
           selectBg.setVisible(this.viewParam.floorselect.floorindex === data)
-        }else{
+        } else {
           selectBg.setVisible(0 === data)
         }
 
@@ -731,7 +785,10 @@
       },
       onRecordDataChange: function (data) {
         this.getNodeBycfgKey('guildCount').setString(String(data.gamecount))
-        this.getNodeBycfgKey('guildConsume').setString(String(data.totalMoney))
+        this.getNodeBycfgKey('guildConsume').setString(String(data.totalMoney || '0'))
+        this.getNodeBycfgKey('guildCpsConsume').setVisible(GuildDataManager.getGuildCPSSwitch())
+        this.getNodeBycfgKey('guildCpsMoneyBg').setVisible(GuildDataManager.getGuildCPSSwitch())
+        this.getNodeBycfgKey('guildCpsConsume').setString(String(data.cpsTotalMoney || '0'))
       },
 
       onSearchPress: function () {
@@ -766,8 +823,8 @@
 
           let headbg = this.getNodeBycfgKey('relationHeadimage')
 
-          if (!headbg.headnode){
-            headbg.headnode = JSPP.ppnew('CacheHeadNode',headbg)
+          if (!headbg.headnode) {
+            headbg.headnode = JSPP.ppnew('CacheHeadNode', headbg)
           }
           headbg.headnode.setHeadInfo(relationinfo.uid, relationinfo.headimgurl)
           headbg.headnode.getRootNode().setScale(0.96)
@@ -790,7 +847,7 @@
     }
   }
 
-  let private = {
+  let __private__ = {
     //选中按钮
     choosedPanelBtn: null,
     //页签对象
@@ -803,6 +860,6 @@
     inputBox: null
   }
 
-  JSPP.ppclass('GuildRecordBackground', 'CCSViewBase', public, protected, private)
+  JSPP.ppclass('GuildRecordBackground', 'CCSViewBase', __public__, __protected__, __private__)
 
-})()
+})

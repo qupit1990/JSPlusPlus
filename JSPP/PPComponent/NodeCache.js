@@ -14,10 +14,9 @@
  * NodeCache.addnode(fathernode)
  *
  */
-(function () {
-  if (!window.JSPP) return
+JSPP.ppinclude(function (__filepath__) {"use strict"
 
-  let public = {
+  let __public__ = {
     // 通过node创建（可复用子节点元件,子节点元件初始化方法）
     NodeCache: function (nodeone, initFunction) {
 
@@ -88,17 +87,17 @@
     }
   }
 
-  let protected = {
+  let __protected__ = {
     templateNode: null,
     newNodeList: [],
     usingNodeList: [],
     dataInitFunction: null
   }
 
-  let private = {
+  let __private__ = {
     static: {}
   }
 
-  JSPP.ppclass('NodeCache', public, protected, private)
+  JSPP.ppclass('NodeCache', __public__, __protected__, __private__)
 
-})()
+})

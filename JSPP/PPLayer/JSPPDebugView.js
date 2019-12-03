@@ -1,4 +1,4 @@
-(function () {
+JSPP.ppinclude(function (__filepath__) {"use strict"
 
   let JSPPView = JSPP.ppclass('JSPPDebugView')
 
@@ -38,8 +38,8 @@
       let filename = basicfilelist[index]
       let excludeAble = true
 
-      for (let index in FileClassesMap[filename]) {
-        let classname = FileClassesMap[filename][index]
+      for (let index in FileClassesMap[filename][1]) {
+        let classname = FileClassesMap[filename][1][index]
 
         if (ObjAliveCountMap[classname] && ObjAliveCountMap[classname] > 0) {
           excludeAble = false
@@ -86,7 +86,7 @@
     for (let i = 0; i < filelist.length; i++) {
       let item = new ccui.Layout()
       item.setContentSize(itemsize)
-      item.setAnchorPoint(cc.p(0.5,0.5))
+      item.setAnchorPoint(cc.p(0.5, 0.5))
       let color
       switch (i % 3) {
         case  0:
@@ -115,9 +115,9 @@
             // if (btn.start && Math.abs(glPos.x - btn.start.x) < 10 && Math.abs(glPos.y - btn.start.y) < 10) {
             let filepath = data[0]
             cc.log('free file classes : [' + filepath + ']')
-            JSPP.ppexclude(filepath)
+            JSPP.ppexclude([filepath])
             sys.cleanScript(filepath)
-            JSPP.ppinclude(filepath)
+            JSPP.ppinclude(['/' + filepath])
             // }
           } else if (et === ccui.Widget.TOUCH_CANCELED) {
             item.setScale(1)
@@ -168,4 +168,4 @@
     }
   }
 
-})()
+})

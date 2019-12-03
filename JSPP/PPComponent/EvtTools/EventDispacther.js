@@ -1,9 +1,9 @@
 /*
 使用样例 by qupit 2019/7/31
 
-let evtlistener = EvtTools.newEventListener("GuildRecordEvent")
+let evtlistener = JSPP.ppnew('EventListener',usingclassname)
 
-let evtDispacther = EvtTools.newEventDispacther()
+let evtDispacther = JSPP.ppnew('EventDispacther')
 
 let ViewCB = function(evtdate){
   //Do something
@@ -23,14 +23,19 @@ evtDispacther.postEvent(evtdate)
 evtDispacther.postEventNextFrame(evtdate)
 
 */
-(function () {
-  if (!window.JSPP) return
 
-  JSPP.ppinclude(
-    './EventListener.js'
-  )
+JSPP.ppinclude([
+  './EventListener.js'
+], function (__filepath__) {"use strict"
 
-  let public = {
+  let __public__ = {
+    virtual: {
+      _EventDispacther: function () {
+      }
+    },
+    EventDispacther:function(){
+
+    },
     registHandler: function (listenCB, evtListener) {
       let usingName
       if (evtListener) {
@@ -105,13 +110,13 @@ evtDispacther.postEventNextFrame(evtdate)
     }
   }
 
-  let protected = {}
+  let __protected__ = {}
 
-  let private = {
+  let __private__ = {
     eventHandlerList: {},
     callback: null
   }
 
-  JSPP.ppclass('EventDispacther', public, protected, private)
-})()
+  JSPP.ppclass('EventDispacther', __public__, __protected__, __private__)
+})
 

@@ -1,12 +1,14 @@
-(function () {
-  if (!window.JSPP) return
+JSPP.ppinclude([
+  './PPResManager.js',
+  ':/PPComponent/EvtTools/EventListener.js'
+],function (__filepath__) {"use strict"
 
-  JSPP.ppinclude(
-    ':/PPComponent/EvtTools/EventListener.js'
-  )
-
-  let public = {
-    CCSViewBase: function (ccpath, configs) {
+  let __public__ = {
+    CCSViewBase: function (ccpath, configs, reslist) {
+      if (reslist) {
+        JSPP.ppstatic('PPResManager').getInstance().addResUse(reslist)
+        this.usingReslist = reslist
+      }
       let node
       if (ccpath.indexOf('.csb') > 0) {
         node = ccs.CSLoader.loadCSB(ccpath)
@@ -52,6 +54,9 @@
 
     virtual: {
       _CCSViewBase: function () {
+        if (this.usingReslist) {
+          JSPP.ppstatic('PPResManager').getInstance().removeResUse(this.usingReslist)
+        }
         this.listener.pprelease()
         this.childrenCache = {}
       }
@@ -76,11 +81,14 @@
     }
   }
 
-  let protected = {
+  let __protected__ = {
     // 通用对象监听
     listener: null,
     // 根节点
     rootnode: null,
+    // 界面使用到的资源
+    usingReslist: null,
+
     virtual: {
       // 子类重载针对节点绑定逻辑的接口
       bindFunctionToNode: function (node, funckey, userdata) { },
@@ -134,7 +142,7 @@
       if (window.gm) {
         //2.0引擎
         gm.doLayout.autoLayout(node)
-      }else{
+      } else {
         this.doLayoutSimple(node)
       }
     },
@@ -217,7 +225,7 @@
     }
   }
 
-  let private = {
+  let __private__ = {
     static: {
       CountListener: 0
     },
@@ -225,6 +233,6 @@
     childrenCache: {}
   }
 
-  JSPP.ppclass('CCSViewBase', public, protected, private)
+  JSPP.ppclass('CCSViewBase', __public__, __protected__, __private__)
 
-})()
+})

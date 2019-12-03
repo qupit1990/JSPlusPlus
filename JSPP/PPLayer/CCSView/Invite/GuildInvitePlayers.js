@@ -1,15 +1,37 @@
-(function () {
+JSPP.ppinclude([
+    ':/PPLayer/PPLayerFactory.js',
+    ':/PPLayer/CCSViewBase.js',
+    ':/PPComponent/CacheHeadNode.js',
+    ':/PPComponent/NodeCache.js',
+    ':/PPComponent/ScrollViewEx.js',
+    ':/PPComponent/EditBoxEx.js'
+  ], function (__filepath__) {
+    'use strict'
 
-    if (!window.JSPP) return
+    JSPP.ppstatic('PPLayerFactory').getInstance().addKeyDefaultInfo('GuildInvite', 'GuildInvitePlayers', 'res/guildRes/GuildSendInviteLayer.csb', {
 
-    let __FILE_PATH__ = JSPP.__core__.DebugInfo.FilePath
+      block: { path: 'block' },
+      background: { path: 'background' },
+      exit: { path: 'background/btn_x', function: 'closeView' },
 
-    JSPP.ppinclude(
-      ':/PPLayer/CCSViewBase.js',
-      ':/PPComponent/CacheHeadNode.js',
-      ':/PPComponent/NodeCache.js',
-      ':/PPComponent/ScrollViewEx.js'
-    )
+      searchBtn: { path: 'background/btn_search', function: 'search' },
+      editBg: { path: 'background/edit_bg' },
+
+      scrollView: { path: 'background/scroll' },
+      scrollItem: { path: 'background/scroll/scrollItem' },
+      headTemplateItem: { path: 'background/player' },
+      inviteItem: { path: 'background/btn_invite', function: 'Invate' },
+
+      peopleHeadBg: { path: 'head_bg' },
+      peopleName: { path: 'nick' },
+      peopleId: { path: 'id' },
+      guildMasterMark: { path: 'mark' },
+      peopleSelect: { path: 'selected' },
+      itemTouch: { path: 'touchRange' }
+
+    }, [
+      'res/guildRes/club/common/common'
+    ])
 
     let GuildResourceConfig = include('Guild/Config/GuildResourceConfig')
     let GuildDataManager = include('Guild/Data/GuildDataManager')
@@ -17,7 +39,7 @@
     let GuildUtil = include('Guild/Utils/GuildUtil')
     let GuildConfig = include('Guild/Config/GuildConfig')
 
-    let public = {
+    let __public__ = {
       virtual: {
         _GuildInvitePlayers: function () {
         }
@@ -28,35 +50,11 @@
         this.doBindingWithcfgKey('searchBtn')
         this.doBindingWithcfgKey('inviteItem')
 
-        let editBg = this.getNodeBycfgKey('editBg')
-        let emptytext = this.getNodeBycfgKey('IDText')
-        let size = editBg.getContentSize()
-        let inputNode = GuildUtil.editBoxCreate(cc.size(size.width * 0.96, size.height * 0.96), '', 8, '')
-        inputNode.setInputFlag(cc.EDITBOX_INPUT_FLAG_SENSITIVE)
-        inputNode.setInputMode(cc.EDITBOX_INPUT_MODE_SINGLELINE)
-        inputNode.setReturnType(cc.KEYBOARD_RETURNTYPE_DONE)
-        inputNode.setPosition(size.width / 2, size.height / 2)
-        inputNode.setFontColor(cc.color(0, 0, 0, 255))
-        inputNode.setDelegate({
-          editBoxEditingDidBegin: JSPP.ppfunction(function (editBox) {
-          }, this),
-          editBoxEditingDidEnd: JSPP.ppfunction(function (editBox) {
-          }, this),
-          editBoxTextChanged: JSPP.ppfunction(function (editBox, text) {
-            emptytext.setVisible(Boolean(!text))
-            if (!text) {
-              if (this.tempList) {
-                this.refreshScroll(this.tempList)
-              } else {
-                this.scrollViewEx.setDataList([])
-              }
-            }
-          }, this),
-          editBoxReturn: JSPP.ppfunction(function (editBox) {
-          }, this)
-        })
-        editBg.addChild(inputNode)
-        this.exitBox = inputNode
+        let exitBoxEX = JSPP.ppnew('EditBoxEx', this.getNodeBycfgKey('editBg'))
+        exitBoxEX.setMaxLength(8)
+        exitBoxEX.setEmptyWord('请输入关键字')
+        exitBoxEX.getEditBoxEventDispatcher().registHandler(JSPP.ppfunction(this.OnEditBoxEvent, this), this.listener)
+        this.exitBox = exitBoxEX
 
         this.doBindingWithcfgKey('inviteItem')
 
@@ -91,7 +89,7 @@
       }
     }
 
-    let protected = {
+    let __protected__ = {
       virtual: {
         onSizeChange: function () {
           this.doLayoutSimple(this.getNodeBycfgKey('block'), true)
@@ -102,7 +100,6 @@
           let data = userdata
           switch (funckey) {
             case 'closeView':
-              cc.log('view close rigst !!!!!!!!!')
               node.addTouchEventListener(JSPP.ppfunction(function (btn, type) {
                 if (type === ccui.Widget.TOUCH_ENDED) {
                   this.close()
@@ -112,7 +109,7 @@
             case 'Invate':
               node.addTouchEventListener(JSPP.ppfunction(function (btn, type) {
                 if (type === ccui.Widget.TOUCH_ENDED) {
-                  if (this.tmpInviteList.length <= 0){
+                  if (this.tmpInviteList.length <= 0) {
                     utils.showMsg('请点击选择想要邀请的玩家！')
                     return
                   }
@@ -189,7 +186,7 @@
         },
 
         searchPeople: function () {
-          let keystr = this.exitBox.string
+          let keystr = this.exitBox.getString()
           let searchtmpList = []
           for (let index = 0; index < this.tempList.length; index++) {
             let check = this.tempList[index]
@@ -204,12 +201,13 @@
       }
     }
 
-    let private = {
+    let __private__ = {
 
       NodeCache: null,
       exitBox: null,
       scrollViewEx: null,
       tableId: null,
+      guildId: null,
       tmpInviteList: [],
       tempList: null,
 
@@ -257,6 +255,18 @@
         this.refreshScroll(tempData)
       },
 
+      OnEditBoxEvent: function (eventType, text) {
+        if (eventType === JSPP.ppstatic('EditBoxEx').Evt_EditBox_TextChanged) {
+          if (!text) {
+            if (this.tempList) {
+              this.refreshScroll(this.tempList)
+            } else {
+              this.scrollViewEx.setDataList([])
+            }
+          }
+        }
+      },
+
       refreshScroll: function (tempData) {
         let onlinelist = [[]]
         for (let i = 0; i < tempData.length; i++) {
@@ -280,6 +290,6 @@
       }
     }
 
-    JSPP.ppclass('GuildInvitePlayers', 'CCSViewBase', public, protected, private)
+    JSPP.ppclass('GuildInvitePlayers', 'CCSViewBase', __public__, __protected__, __private__)
   }
-)()
+)

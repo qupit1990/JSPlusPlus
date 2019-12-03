@@ -23,10 +23,9 @@ evtDispacther.postEvent(evtdate)
 evtDispacther.postEventNextFrame(evtdate)
 
 */
-(function () {
-  if (!window.JSPP) return
+JSPP.ppinclude(function (__filepath__) {"use strict"
 
-  let public = {
+  let __public__ = {
     static: {
       DefaultName: 'DEFULT_LISTENER'
     },
@@ -39,8 +38,6 @@ evtDispacther.postEventNextFrame(evtdate)
       this.evtSet = new Set()
 
       if (name) {
-        if (this.listenerNames === null) {this.listenerNames = new Set()}
-
         if (this.listenerNames.has(name)) {
           cc.error('Listener\'s Name Crashed !! name ==' + name)
         } else {
@@ -50,7 +47,9 @@ evtDispacther.postEventNextFrame(evtdate)
     },
     unregistAllEventHandler: function () {
       this.evtSet.forEach((value) => {
-        value.removeListener(this)
+        if (JSPP.ppisObject(value)){
+          value.removeListener(this)
+        }
       })
       this.evtSet.clear()
     },
@@ -69,15 +68,22 @@ evtDispacther.postEventNextFrame(evtdate)
     }
   }
 
-  let protected = {}
+  let __protected__ = {}
 
-  let private = {
+  let __private__ = {
     static: {
+      static:function(){
+        this.listenerNames = new Set()
+      },
+      _static:function(){
+        this.listenerNames = null
+      },
+
       listenerNames: null
     },
     name: '',
     evtSet: null
   }
 
-  JSPP.ppclass('EventListener', public, protected, private)
-})()
+  JSPP.ppclass('EventListener', __public__, __protected__, __private__)
+})

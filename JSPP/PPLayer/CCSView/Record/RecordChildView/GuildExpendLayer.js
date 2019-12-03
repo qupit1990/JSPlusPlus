@@ -1,12 +1,46 @@
 //  Created by qupit in 2019/9/25.
 
-(function () {
+JSPP.ppinclude([
+  ':/PPLayer/PPLayerFactory.js',
+  ':/PPData/Record/GuildRecordData.js',
+  ':/PPComponent/ScrollViewEx.js',
+  '../GuildRecordViewBase.js'
+],function (__filepath__) {"use strict"
 
-  JSPP.ppinclude(
-    ':/PPData/Record/GuildRecordData.js',
-    ':/PPComponent/ScrollViewEx.js',
-    '../GuildRecordViewBase.js'
-  )
+  JSPP.ppstatic('PPLayerFactory').getInstance().addKeyDefaultInfo('ExpendLayer', 'GuildExpendLayer', 'res/guildRes/GuildRecordExpend.csb', {
+
+    sort_title0: { path: 'guildExpendLayout/tilblebg/boxpanel/Checklist_0', function: 'chooseSort' },
+    sort_title1: { path: 'guildExpendLayout/tilblebg/boxpanel/Checklist_1', function: 'chooseSort' },
+    sort_title2: { path: 'guildExpendLayout/tilblebg/boxpanel/Checklist_2', function: 'chooseSort' },
+    sort_title3: { path: 'guildExpendLayout/tilblebg/boxpanel/Checklist_3', function: 'chooseSort' },
+    sort_title4: { path: 'guildExpendLayout/tilblebg/boxpanel/Checklist_4', function: 'chooseSort' },
+    sort_title5: { path: 'guildExpendLayout/tilblebg/boxpanel/Checklist_5', function: 'chooseSort' },
+
+    scrollview: { path: 'guildExpendLayout/scrollview' },
+    scrollitem: { path: 'guildExpendLayout/scrollview/recorditem' },
+
+    totalBg: { path: 'guildExpendLayout/totalBg' },
+    totalActiveText: { path: 'guildExpendLayout/totalBg/totalActiveText' },
+    totalExpendText: { path: 'guildExpendLayout/totalBg/totalExpendText' },
+    totalNumText: { path: 'guildExpendLayout/totalBg/ totalNumText' },
+    totalFullText: { path: 'guildExpendLayout/totalBg/totalFullText' },
+    totalBigWinnerText: { path: 'guildExpendLayout/totalBg/totalBigWinnerText' },
+
+    itemTime: { path: 'time' },
+    itemActive: { path: 'activeText' },
+    itemCpsExpend: { path: 'cpsExpendText' },
+    itemCpsMoneyBg: { path: 'cpsMonetBg' },
+    itemExpend: { path: 'expendText' },
+    itemMoneyBg: { path: 'moneyBg' },
+    itemTotalNum: { path: ' totalNumText' },
+    itemFullNum: { path: 'fullNumText' },
+    itemBigWinner: { path: 'bigWinnerText' }
+
+  }, [
+    'res/guildRes/club/common/common'
+  ])
+
+  let GuildDataManager = include('Guild/Data/GuildDataManager')
 
   let GuildExpendType = { // 选中的排序按钮
     TimeDay: 0, // 时间
@@ -20,7 +54,7 @@
 
   let GuildUtil = include('Guild/Utils/GuildUtil')
 
-  let public = {
+  let __public__ = {
     virtual: {
       _GuildExpendLayer: function () {},
 
@@ -35,7 +69,7 @@
       ChangeReqParam: function (param) {
         if (!this.ppsuper(param)) return false
 
-        JSPP.ppstatic('GuildRecordData').getInstance().requerstGuildExpend(param.floorselect?param.floorselect.floorindex:null, param.relationselect?param.relationselect.uid:null, param.starttime, param.endtime)
+        JSPP.ppstatic('GuildRecordData').getInstance().requerstGuildExpend(param.floorselect?param.floorselect.floorindex:null, param.relationselect?param.relationselect.uid:null, param.starttime, param.endtime + param.endtimeEx)
         return true
       },
       TitleSelected: function (viewFrameKey, param) {
@@ -55,9 +89,7 @@
 
       let scrollview = this.getNodeBycfgKey('scrollview')
       let scrollitem = this.getNodeBycfgKey('scrollitem')
-      this.scrollviewEx = JSPP.ppnew('ScrollViewEx', scrollview, scrollitem, function (item) {
-
-      }, undefined, 0)
+      this.scrollviewEx = JSPP.ppnew('ScrollViewEx', scrollview, scrollitem, undefined, undefined, 0)
       this.scrollviewEx.setDataList([], JSPP.ppfunction(this.updateItem, this))
 
       this.sortBtns.TimeDay = this.doBindingWithcfgKey('sort_title0', null, 'TimeDay')
@@ -79,7 +111,7 @@
 
   }
 
-  let protected = {
+  let __protected__ = {
     virtual: {
       bindFunctionToNode: function (node, funckey, userdata) {
         let data = userdata
@@ -181,30 +213,50 @@
 
       },
       updateItem: function (index, item, data) {
+        let selectcolor = cc.color(220, 0, 0)
+        let normalcolor = cc.color(134, 100, 67)
+
         let itemTime = this.getNodeBycfgKey('itemTime', item)
         let time = unescape(data.day)
         let day = time.substring(0, 4) + '-' + time.substring(4, 6) + '-' + time.substring(6, 8)
         itemTime.setString(day)
+        itemTime.setTextColor(this.sortselect === GuildExpendType.TimeDay ? selectcolor : normalcolor)
 
         let itemActive = this.getNodeBycfgKey('itemActive', item)
         itemActive.setString(data.dau)
+        itemActive.setTextColor(this.sortselect === GuildExpendType.ActiveNumber ? selectcolor : normalcolor)
+
+        let itemCpsExpend = this.getNodeBycfgKey('itemCpsExpend', item)
+        itemCpsExpend.setVisible(GuildDataManager.getGuildCPSSwitch())
+        itemCpsExpend.setString(data.cpsMoneyUsed || '0')
+        itemCpsExpend.setTextColor(this.sortselect === GuildExpendType.ExpendNum ? selectcolor : normalcolor)
+
+        this.getNodeBycfgKey('itemCpsMoneyBg', item).setVisible(GuildDataManager.getGuildCPSSwitch())
 
         let itemExpend = this.getNodeBycfgKey('itemExpend', item)
-        itemExpend.setString(data.moneyUsed)
+        itemExpend.setString(data.moneyUsed || '0')
+        itemExpend.setTextColor(this.sortselect === GuildExpendType.ExpendNum ? selectcolor : normalcolor)
+        if (!GuildDataManager.getGuildCPSSwitch()) {
+          itemExpend.setPositionY(item.getContentSize().height / 2)
+          this.getNodeBycfgKey('itemMoneyBg', item).setPositionY(item.getContentSize().height / 2 - 2)
+        }
 
         let itemTotalNum = this.getNodeBycfgKey('itemTotalNum', item)
         itemTotalNum.setString(data.roomCount)
+        itemTotalNum.setTextColor(this.sortselect === GuildExpendType.AllCount ? selectcolor : normalcolor)
 
         let itemFullNum = this.getNodeBycfgKey('itemFullNum', item)
         itemFullNum.setString(data.roomCount_complete)
+        itemFullNum.setTextColor(this.sortselect === GuildExpendType.FullCount ? selectcolor : normalcolor)
 
         let itemBigWinner = this.getNodeBycfgKey('itemBigWinner', item)
         itemBigWinner.setString(data.bigWinnerRoomCount)
+        itemBigWinner.setTextColor(this.sortselect === GuildExpendType.WinCount ? selectcolor : normalcolor)
       }
     }
   }
 
-  let private = {
+  let __private__ = {
     // 选中的排序
     sortselect: GuildExpendType.TimeDay,
     // 排序按钮列表
@@ -217,6 +269,6 @@
     tmpArray: [],
   }
 
-  JSPP.ppclass('GuildExpendLayer', 'GuildRecordViewBase', public, protected, private)
+  JSPP.ppclass('GuildExpendLayer', 'GuildRecordViewBase', __public__, __protected__, __private__)
 
-})()
+})

@@ -1,15 +1,13 @@
 //  Created by qupit in 2019/9/25.
 
-(function () {
-
-  JSPP.ppinclude(
-    '../../CCSViewBase.js'
-  )
+JSPP.ppinclude([
+  '../../CCSViewBase.js'
+],function (__filepath__) {"use strict"
 
   let maxQueryGameLogDuration = 30 // 最多支持查询n天内的战绩
 
   //虚接口类 GuildRecordViewBase
-  let public = {
+  let __public__ = {
     virtual: {
       // 界面显示时触发
       ShowView: 0,
@@ -47,11 +45,11 @@
       }
     }
   }
-  let protected = {
+  let __protected__ = {
     BackgroundView: null
   }
-  let private = {}
+  let __private__ = {}
 
-  JSPP.ppclass('GuildRecordViewBase', 'CCSViewBase', public, protected, private)
+  JSPP.ppclass('GuildRecordViewBase', 'CCSViewBase', __public__, __protected__, __private__)
 
-})()
+})

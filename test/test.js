@@ -1,5 +1,7 @@
-(function(){
+(function () {
 
-window.obja = JSPP.ppnew("classC")
+  JSPP.ppinclude(':/../testcode/classC.js')
+
+  window.obja = JSPP.ppnew('classC')
 
 })()

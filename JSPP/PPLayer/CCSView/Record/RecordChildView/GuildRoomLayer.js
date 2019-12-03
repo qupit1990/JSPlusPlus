@@ -1,14 +1,33 @@
 //  Created by qupit in 2019/9/25.
 
-(function () {
+JSPP.ppinclude([
+  ':/PPLayer/PPLayerFactory.js',
+  ':/PPData/Record/GuildRecordData.js',
+  ':/PPComponent/CacheHeadNode.js',
+  ':/PPComponent/ScrollViewEx.js',
+  ':/PPComponent/NodeCache.js',
+  '../GuildRecordViewBase.js'
+], function (__filepath__) {"use strict"
 
-  JSPP.ppinclude(
-    ':/PPData/Record/GuildRecordData.js',
-    ':/PPComponent/CacheHeadNode.js',
-    ':/PPComponent/ScrollViewEx.js',
-    ':/PPComponent/NodeCache.js',
-    '../GuildRecordViewBase.js'
-  )
+  JSPP.ppstatic('PPLayerFactory').getInstance().addKeyDefaultInfo('RoomLayer', 'GuildRoomLayer', 'res/guildRes/GuildQueryMember.csb', {
+
+    scrollview: { path: 'recordlayout/diban/scrollview', function: 'ScrollEvent' },
+    scrollitem: { path: 'recordlayout/diban/scrollview/item' },
+    playeritem: { path: 'recordlayout/diban/playercache/playerItem' },
+    playerInfoNode: { path: 'recordlayout/diban/playerinfo' },
+    roomInfoNode: { path: 'recordlayout/diban/roominfo' },
+    emptyTip: { path: 'recordlayout/diban/emptyTip' },
+    btnpaixu: { path: 'recordlayout/diban/btnpaixu', function: 'ChangeSort' },
+
+    timeSelect: { path: 'recordlayout/timeBg', function: 'changeDate' },
+    timeText: { path: 'recordlayout/timeBg/timeText' },
+    btnYesterday: { path: 'recordlayout/btn_left', function: 'changeDate' },
+    btnToday: { path: 'recordlayout/btn_today', function: 'changeDate' },
+    btntomorrow: { path: 'recordlayout/btn_right', function: 'changeDate' }
+
+  }, [
+    'res/guildRes/club/common/common'
+  ])
 
   let GuildUtil = include('Guild/Utils/GuildUtil')
   let ModulePublicInterface = include('Game/ModulePublicInterface')
@@ -16,7 +35,7 @@
   let GuildDataManager = include('Guild/Data/GuildDataManager')
   let numImg = ['res/guildRes/club/histroy/histroy_bg_12.png', 'res/guildRes/club/histroy/histroy_bg_13.png']
 
-  let public = {
+  let __public__ = {
     virtual: {
       _GuildRoomLayer: function () {},
 
@@ -53,7 +72,7 @@
           this.searchingId = null
         }
         this.starttime = param.starttime
-        this.endtime = param.endtime
+        this.endtime = param.endtime + param.endtimeEx
         this.scoreMin = param.scoreMin
         this.scoreMax = param.scoreMax
         JSPP.ppstatic('GuildRecordData').getInstance().requerstGetGuildGameTable(this.starttime, this.endtime, this.searchingId, this.searchingTableId, this.order, this.scoreMin, this.scoreMax, false)
@@ -92,19 +111,12 @@
 
       JSPP.ppstatic('GuildRecordData').getInstance().getDispatcher('recorddataChangeEvent').registHandler(JSPP.ppfunction(this.onDataChange, this), this.listener)
 
-      let playeritemsize = this.getNodeBycfgKey('playeritem').getContentSize()
-      this.scrollviewEx = JSPP.ppnew('ScrollViewEx', this.doBindingWithcfgKey('scrollview'), this.getNodeBycfgKey('scrollitem'), undefined, function (item, data) {
-        if (!data || !data.players || data.players.length <= 4) {
-          return item.getContentSize()
-        } else {
-          let roomInfoheight = item.getChildByName('roomInfo').getContentSize().height
-          return cc.size(item.getContentSize().width, roomInfoheight + Math.floor((data.players.length + 3) / 4) * playeritemsize.height)
-        }
-      }, 0)
+      this.scrollviewEx = JSPP.ppnew('ScrollViewEx', this.doBindingWithcfgKey('scrollview'), this.getNodeBycfgKey('scrollitem'), undefined, JSPP.ppfunction(this.itemSize, this), 0)
+      this.scrollviewEx.setDataList([], JSPP.ppfunction(this.updateItem, this))
 
       this.peopleNodeCache = JSPP.ppnew('NodeCache', this.getNodeBycfgKey('playeritem'), function (item, template) {
         let headBg = item.getChildByName('plIcon')
-        item.headnode = JSPP.ppnew('CacheHeadNode',headBg)
+        item.headnode = JSPP.ppnew('CacheHeadNode', headBg)
         item.headnode.getRootNode().setScale(0.96)
 
         let scoreImgText = item.getChildByName('plScore')
@@ -113,12 +125,11 @@
       // 初始化30个对象
       this.peopleNodeCache.reSizeCache(30)
 
-      this.checkTime = (new Date()).getTime()
       this.doBindingWithcfgKey('btnpaixu').setSelected(!this.order)
     }
   }
 
-  let protected = {
+  let __protected__ = {
     virtual: {
       bindFunctionToNode: function (node, funckey, userdata) {
         let data = userdata
@@ -154,13 +165,26 @@
         // 请求刷新数据
         JSPP.ppstatic('GuildRecordData').getInstance().requerstGetGuildGameTable(this.starttime, this.endtime, this.searchingId, this.searchingTableId, this.order, this.scoreMin, this.scoreMax, true)
       },
+      itemSize: function (item, data) {
+        if (!data || !data.players || data.players.length <= 4) {
+          return item.getContentSize()
+        } else {
+          let roomInfoheight = item.getChildByName('roomInfo').getContentSize().height
+          let playeritemheight = this.getNodeBycfgKey('playeritem').getContentSize().height
+          return cc.size(item.getContentSize().width, roomInfoheight + Math.floor((data.players.length + 3) / 4) * playeritemheight)
+        }
+      },
       onDataChange: function (data, more) {
         if (this.getNodeBycfgKey('roomInfoNode').isVisible()) {
           this.getNodeBycfgKey('playerInfoNode').setVisible(false)
           let guildCountText = this.getNodeBycfgKey('roomInfoNode').getChildByName('guildCount')
           guildCountText.setString(data.gamecount)
+          let guildCpsConsumeText = this.getNodeBycfgKey('roomInfoNode').getChildByName('guildCpsConsume')
+          guildCpsConsumeText.setVisible(GuildDataManager.getGuildCPSSwitch())
+          guildCpsConsumeText.setString(data.cpsTotalMoney || '0')
+          this.getNodeBycfgKey('roomInfoNode').getChildByName('cpsMoneyBg').setVisible(GuildDataManager.getGuildCPSSwitch())
           let guildConsumeText = this.getNodeBycfgKey('roomInfoNode').getChildByName('guildConsume')
-          guildConsumeText.setString(data.totalMoney)
+          guildConsumeText.setString(data.totalMoney || '0')
         } else {
           if (!this.searchingId) {
             //处理this.searchingId为undefined时(网络慢，未返回情况下切换到其他页签的情况) 清空显示
@@ -176,8 +200,8 @@
             this.getNodeBycfgKey('playerInfoNode').setVisible(true)
 
             let headbg = this.getNodeBycfgKey('playerInfoNode').getChildByName('icon')
-            if (!headbg.headnode){
-              headbg.headnode = JSPP.ppnew('CacheHeadNode',headbg)
+            if (!headbg.headnode) {
+              headbg.headnode = JSPP.ppnew('CacheHeadNode', headbg)
               headbg.headnode.getRootNode().setScale(0.96)
             }
             headbg.headnode.setHeadInfo(data.uid, data.headimgurl)
@@ -193,8 +217,8 @@
             this.getNodeBycfgKey('playerInfoNode').setVisible(true)
 
             let headBg = this.getNodeBycfgKey('playerInfoNode').getChildByName('icon')
-            if (!headBg.headnode){
-              headBg.headnode = JSPP.ppnew('CacheHeadNode',headBg)
+            if (!headBg.headnode) {
+              headBg.headnode = JSPP.ppnew('CacheHeadNode', headBg)
               headBg.headnode.getRootNode().setScale(0.96)
             }
             headBg.headnode.setHeadInfo(this.searchingId, data.userStatistics.headimgurl)
@@ -218,27 +242,39 @@
             playWinText.setString(data.userStatistics.winnerCount + '/' + data.userStatistics.winnerTotalPoint)
           }
         }
-
-        this.tmpArray = []
+        if (!more) {
+          this.tmpArray = []
+        }
         if (data.info instanceof Array && data.info.length > 0) {
           for (let index = 0; index < data.info.length; index++) {
-            this.tmpArray.push(data.info[index])
-            //this.tmpArray.push(data.info[index])
-            //this.tmpArray.push(data.info[index])
-            //this.tmpArray.push(data.info[index])
-            //this.tmpArray.push(data.info[index])
-            //this.tmpArray.push(data.info[index])
-            //this.tmpArray.push(data.info[index])
-            //this.tmpArray.push(data.info[index])
+            let getData = data.info[index]
+            if (more) {
+              // 追加模式时 检查去重
+              let newdata = true
+              for (let i = 0; i < this.tmpArray.length; i++) {
+                if (this.tmpArray[i].tableid === getData.tableid) {
+                  newdata = false
+                  break
+                }
+              }
+              if (newdata) {
+                this.tmpArray.push(getData)
+              }
+            } else {
+              this.tmpArray.push(getData)
+            }
           }
-          this.getNodeBycfgKey('emptyTip').setVisible(data.info.length <= 0)
-        } else {
-          this.getNodeBycfgKey('emptyTip').setVisible(true)
         }
+        this.getNodeBycfgKey('emptyTip').setVisible(this.tmpArray.length <= 0)
         if (more) {
-          this.scrollviewEx.addDataList(this.tmpArray)
+          let oldRange = this.scrollviewEx.getMaxScrollRange()
+          let oldPercent = this.scrollviewEx.getPercent()
+          this.scrollviewEx.setDataList(this.tmpArray)
+          let newRange = this.scrollviewEx.getMaxScrollRange()
+          let newPercent = (oldPercent * oldRange + newRange - oldRange) / newRange
+          this.scrollviewEx.setPercent(newPercent)
         } else {
-          this.scrollviewEx.setDataList(this.tmpArray, this.updateItem.bind(this))
+          this.scrollviewEx.setDataList(this.tmpArray)
         }
       },
       updateItem: function (index, item, data) {
@@ -278,9 +314,7 @@
           let peoplenode = this.peopleNodeCache.addnode(playerpanel)
           peoplenode.setPosition(cc.p(size.width * (i % 4), MaxH - size.height - size.height * Math.floor(i / 4)))
           this.updatePlayer(peoplenode, playerData, data.owner)
-          if (i % 4 === 3) {
-            peoplenode.getChildByName('curline').setVisible(false)
-          }
+          peoplenode.getChildByName('curline').setVisible(i % 4 !== 3)
         }
 
         // 设置点击事件
@@ -337,18 +371,16 @@
           fileName = numImg[1]
         }
         scoreImgText.setProperty(strScore, fileName, 20, 34, '+')
-        playernode.getChildByName('cpsCost').setVisible(data.isBigWinner)
-        playernode.getChildByName('cpsBg').setVisible(data.isBigWinner)
-        if (data.isBigWinner) {
+        playernode.getChildByName('cpsCost').setVisible(data.cpsCost > 0)
+        playernode.getChildByName('cpsBg').setVisible(data.cpsCost > 0)
+        if (data.cpsCost > 0) {
           playernode.getChildByName('cpsCost').setString('消耗:' + data.cpsCost)
         }
-
-
       }
     }
   }
 
-  let private = {
+  let __private__ = {
     // 人物对象池
     peopleNodeCache: undefined,
     //滚动控件
@@ -360,38 +392,14 @@
     //排序标记
     order: false,
 
-    starttime : null,
-    endtime : null,
-    scoreMin : null,
-    scoreMax : null,
+    starttime: null,
+    endtime: null,
+    scoreMin: null,
+    scoreMax: null,
     //数据缓存
     tmpArray: []
   }
 
-  JSPP.ppclass('GuildRoomLayer', 'GuildRecordViewBase', public, protected, private)
-
-})()
-
-/*/
-
-load('Guild/UI/Record/GuildRecordLayer', function () {
-
-  JSPP.ppinclude(
-    ':/PPComponent/NodeCache.js',
-    ':/PPComponent/ScrollViewEx.js',
-    ':/PPComponent/EvtTools/EventDispacther.js',
-    ':/PPComponent/EvtTools/EventListener.js'
-  )
-
-  let GuildResourceConfig = include('Guild/Config/GuildResourceConfig')
-  let BaseLayer = include('App/Base/BaseLayer')
-  let GuildServerApi = include('Guild/ServerApi/GuildServerApi')
-  let PackageConfig = include('Game/PackageConfig')
-  let ModulePublicInterface = include('Game/ModulePublicInterface')
-
-  let GuildExpendLayer = include('Guild/UI/Record/GuildExpendLayer')
-
+  JSPP.ppclass('GuildRoomLayer', 'GuildRecordViewBase', __public__, __protected__, __private__)
 
 })
-
-//*/

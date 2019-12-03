@@ -24,11 +24,18 @@
  *    每一个item如何使用data正确显示
  * })
  *
+ * 数据需要增加时可以使用此方法实现向下添加（其他的同理）
+ * let oldRange = this.scrollviewEx.getMaxScrollRange()
+ * let oldPercent = this.scrollviewEx.getPercent()
+ * this.scrollviewEx.setDataList(this.tmpArray)
+ * let newRange = this.scrollviewEx.getMaxScrollRange()
+ * let newPercent = (oldPercent * oldRange + newRange - oldRange) / newRange
+ * this.scrollviewEx.setPercent(newPercent)
+ *
  */
-(function () {
-  if (!window.JSPP) return
+JSPP.ppinclude(function (__filepath__) {"use strict"
 
-  let public = {
+  let __public__ = {
     //通过scrollView创建（scrollView节点,可复用子节点元件,子节点元件初始化方法,[子节点尺寸计算方法,间距]）
     ScrollViewEx: function (scrollViewNode, childrenNode, initFunction, itemsizeFunc, baseSpase) {
 
@@ -157,6 +164,7 @@
 
       let containerPos = this.scrollNode.getInnerContainerPosition()
       let containerSize = this.scrollNode.getInnerContainerSize()
+      let precent = this.getPercent()
 
       this._refreshItemAll(0)
 
@@ -168,20 +176,24 @@
       if (this._towards == 0) {
         this.scrollNode.setInnerContainerSize(cc.size(this._maxRange, containerSize.height))
         if (keepStatic) {
-          cc.log('Static Check oldcontainerPos.x =' + containerPos.x)
-          containerPos.x = containerPos.x / (oldMaxRange - this._showRange) * (this._maxRange - this._showRange)
-          cc.log('Static Check containerPos.x =' + containerPos.x)
-          this.scrollNode.setInnerContainerPosition(containerPos)
+          cc.log(' precent =' + precent)
+          this.setPercent(precent)
+          // cc.log('Static Check oldcontainerPos.x =' + containerPos.x)
+          // containerPos.x = containerPos.x / (oldMaxRange - this._showRange) * (this._maxRange - this._showRange)
+          // cc.log('Static Check containerPos.x =' + containerPos.x)
+          // this.scrollNode.setInnerContainerPosition(containerPos)
         } else if (this._maxRange > this._showRange) {
           this.scrollNode.setInnerContainerPosition(cc.p(this._showRange - this._maxRange, 0))
         }
       } else if (this._towards == 1) {
         this.scrollNode.setInnerContainerSize(cc.size(containerSize.width, this._maxRange))
         if (keepStatic) {
-          cc.log('Static Check oldcontainerPos.y =' + containerPos.y)
-          containerPos.y = containerPos.y / (oldMaxRange - this._showRange) * (this._maxRange - this._showRange)
-          cc.log('Static Check containerPos.y =' + containerPos.y)
-          this.scrollNode.setInnerContainerPosition(containerPos)
+          cc.log(' precent =' + precent)
+          this.setPercent(precent)
+          //cc.log('Static Check oldcontainerPos.y =' + containerPos.y)
+          //containerPos.y = containerPos.y / (oldMaxRange - this._showRange) * (this._maxRange - this._showRange)
+          //cc.log('Static Check containerPos.y =' + containerPos.y)
+          //this.scrollNode.setInnerContainerPosition(containerPos)
         } else if (this._maxRange > this._showRange) {
           this.scrollNode.setInnerContainerPosition(cc.p(0, this._showRange - this._maxRange))
         }
@@ -262,7 +274,7 @@
 
       this._changeItemDt(-1)
     },
-    //设置是否反向排列
+    // 设置是否反向排列
     setDataRevert: function (bRevert) {
       if (this._bReverseList == bRevert) return
       this._bReverseList = bRevert
@@ -273,10 +285,39 @@
       }
 
       this._refreshItemAll(this._itemShowingBeginNum)
+    },
+    // 获得最大滚动区域
+    getMaxScrollRange: function () {
+      return this._maxRange
+    },
+    // 获得显示区域
+    getScrollViewRange: function () {
+      return this._showRange
+    },
+    // 获取当前显示位置（百分比0-1）
+    getPercent: function () {
+      // this._maxRange - this._showRange
+      let containerSize = this.scrollNode.getInnerContainerSize()
+      let containerPos = this.scrollNode.getInnerContainerPosition()
+      if (this._towards == 0) {
+        return containerPos.x / containerSize.width
+      } else if (this._towards == 1) {
+        return -containerPos.y / containerSize.height
+      }
+    },
+    // 设置当前显示位置（百分比0-1）
+    setPercent: function (percent) {
+      let containerSize = this.scrollNode.getInnerContainerSize()
+      let containerPos = this.scrollNode.getInnerContainerPosition()
+      if (this._towards == 0) {
+        this.scrollNode.setInnerContainerPosition(cc.p(containerSize.width * percent, containerPos.y))
+      } else if (this._towards == 1) {
+        this.scrollNode.setInnerContainerPosition(cc.p(containerPos.x, -containerSize.height * percent))
+      }
     }
   }
 
-  let protected = {
+  let __protected__ = {
     scrollNode: null,
     childrenNode: null,
     _towards: 0,
@@ -296,17 +337,18 @@
     virtual: {
       _refreshItemAll: function (firstindex) {
         this._itemShowingBeginNum = firstindex
-        let nextpos = this._itemSpase
+        let nextpos = this._itemSpase + firstindex * this._itemMinRange
         if (this._towards == 1) {
-          nextpos = this._maxRange - this._itemSpase
+          nextpos = this._maxRange - nextpos
           if (this._maxRange < this._showRange) nextpos += this._showRange - this._maxRange
         }
+
         for (let index = 0; index < this._childrenList.length; index++) {
           let item = this._childrenList[index]
           let itemindex = -1
           let data = undefined
           if (firstindex + index >= 0 && firstindex + index < this._dataList.length) {
-            itemindex = this._bReverseList ? (this._dataList.length - 1 - index) : index
+            itemindex = this._bReverseList ? (this._dataList.length - 1 - firstindex - index) : firstindex + index
             data = this._dataList[itemindex]
           }
           this._updateItemWithData(item, itemindex, data)
@@ -382,7 +424,7 @@
     }
   }
 
-  let private = {
+  let __private__ = {
     _update: function (dt) {
       if (!this._dataList || (this._towards !== 0 && this._towards !== 1)) return
       let innerContainerPos
@@ -403,7 +445,7 @@
             } else {
               let dtindex = 1 + Math.floor((innerPosBorder - innerContainerPos) / this._itemMinRange)
               if (dtindex >= this._childrenList.length) {
-                this._refreshItemAll(this._itemShowingBeginNum - dtindex)
+                this._refreshItemAll(this._itemShowingBeginNum + dtindex)
               } else {
                 this._changeItemDt(-dtindex)
               }
@@ -475,6 +517,6 @@
     }
   }
 
-  JSPP.ppclass('ScrollViewEx', public, protected, private)
+  JSPP.ppclass('ScrollViewEx', __public__, __protected__, __private__)
 
-})()
+})

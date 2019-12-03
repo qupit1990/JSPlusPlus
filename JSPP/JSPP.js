@@ -16,11 +16,13 @@
  *            1.0.6 提供getV方法支持获取版本号, 编译运行后不可以再操作类  2019/9/23
  *            1.0.7 提供ppcast动态类型转换接口, 优化内部逻辑使类型之间调用更可靠  2019/9/27
  *            1.1.0 static状态下,为静态对象 提供构造接口static() 析构接口_static() 2019/10/24
- *
+ *            1.2.0 冻结结构对象，实现防止意外修改的情况 2019/11/14
+ *            1.2.1 ppinclude ppexclude 参数改为只支持传入数组(参数1) ppinclude增加 引入结束执行的方法(参数2) 2019/11/22
+ *            1.2.2 相对路径 增加/开头标记表示绝对路径 2019/11/26
 */
 
 (function () {
-  let Version = '1.1.0'
+  let Version = '1.2.2'
 
   let ClassLimitType = {
     public: 0,
@@ -68,6 +70,10 @@
   let FileClassesMap = {}
   // 对应类所在的声明文件映射表
   let ClassDefinedFile = {}
+  // 依赖中的文件列表
+  let CheckingincludeList = []
+  // 是否处于异步状态中
+  let DoEncludeWaiting = false
   // 实例对象 调用访问器表
   let ObjVisitProtoMap = {}
   // 静态对象存放表
@@ -153,7 +159,7 @@
     if (StaticTable[classname]) {
       let staticobj = StaticTable[classname]
       let staticReleasefunction = ClassStaticMap[staticobj.__class]['_static']
-      if (typeof staticReleasefunction === 'function'){
+      if (typeof staticReleasefunction === 'function') {
         ObjVisitList.push({ objid: staticobj.__self.refid, class: staticobj.__class, visitfunction: '_static' })
         staticReleasefunction.call(staticobj)
         ObjVisitList.pop()
@@ -490,6 +496,10 @@
           },
           set: function (value) {
             if (!checkLimite(this.__class, useKey)) return
+            if (ClassMemberMap[this.__class][useKey][0] === ClassMemberType.staticconst) {
+              JSPP.pperror('class staticconst member can\'t do reset !')
+              return
+            }
             staticobj.__self[useKey] = value
           }
         })
@@ -501,9 +511,11 @@
         }
       }
     }
+    //限制意外修改
+    Object.freeze(staticobj)
 
     let staticInitfunction = ClassStaticMap[staticobj.__class]['static']
-    if (typeof staticInitfunction === 'function'){
+    if (typeof staticInitfunction === 'function') {
       ObjVisitList.push({ objid: staticobj.__self.refid, class: staticobj.__class, visitfunction: 'static' })
       staticInitfunction.call(staticobj)
       ObjVisitList.pop()
@@ -819,54 +831,117 @@
     return list
   }
 
-  JSPP.ppinclude = function () {
-    let args = arguments
-    for (let key in args) {
-      let path = args[key]
-      let environmentPath = ''
-      if (DebugInfo.FilePath) {
-        environmentPath = DebugInfo.FilePath
-        environmentPath = environmentPath.substr(0, environmentPath.lastIndexOf('/'))
+  let onFileLoadedCheck = function () {
+    if (!DoEncludeWaiting) return
+    let tmpPath = DebugInfo.FilePath
+
+    for (let i = 0; i < CheckingincludeList.length;) {
+      let checkingdata = CheckingincludeList[i]
+
+      let allLoaded = true
+      for (let j = 0; j < checkingdata.length; j++) {
+        if (FileClassesMap[checkingdata[j]][0] !== true) {
+          allLoaded = false
+          break
+        }
       }
+
+      if (allLoaded) {
+        DebugInfo.FilePath = checkingdata[1]
+        checkingdata[2](DebugInfo.FilePath)
+        CheckingincludeList.splice(i, 1)
+      } else {
+        i++
+      }
+    }
+    if (CheckingincludeList.length === 0) {
+      DoEncludeWaiting = false
+    }
+
+    DebugInfo.FilePath = tmpPath
+  }
+
+  JSPP.ppinclude = function (list, successfunc) {
+    if (typeof list === 'function') {
+      successfunc = list
+      successfunc()
+      return
+    } else if (typeof list === 'string') {
+      list = [list]
+    }
+    let myFilePath = DebugInfo.FilePath
+    let includeBasePath = ''
+    if (myFilePath) {
+      includeBasePath = myFilePath.substr(0, myFilePath.lastIndexOf('/'))
+    }
+
+    let checkList = []
+    for (let index = 0; index < list.length; index++) {
+      let path = list[index]
+      let environmentPath = includeBasePath
       let pathpice = path.split('/')
       for (let i = 0; i < pathpice.length; i++) {
         if (pathpice[i] === '..') {
           environmentPath = environmentPath.substr(0, environmentPath.lastIndexOf('/'))
-        } else if (pathpice[i] === '.' || pathpice[i] === '') {
+        } else if (pathpice[i] === '.') {
           continue
         } else if (pathpice[i] === ':') {
           environmentPath = DebugInfo.RootPath
-        } else if (environmentPath) {
+        } else if (pathpice[i] && environmentPath) {
           environmentPath = environmentPath + '/' + pathpice[i]
         } else {
           environmentPath = pathpice[i]
         }
       }
-      if (environmentPath && !FileClassesMap[environmentPath]) {
-        let tmpPath = DebugInfo.FilePath
-        DebugInfo.FilePath = environmentPath
-        FileClassesMap[environmentPath] = []
-        DebugInfo.loadfile(environmentPath, function () {
-        })
-        DebugInfo.FilePath = tmpPath
+      if (environmentPath) {
+        checkList.push(environmentPath)
+        if (FileClassesMap[environmentPath] === undefined) {
+          FileClassesMap[environmentPath] = [false, []]
+          DebugInfo.FilePath = environmentPath
+          DebugInfo.loadfile(environmentPath, function () {
+            FileClassesMap[environmentPath][0] = true
+            onFileLoadedCheck()
+          })
+        }
+      }
+    }
+
+    if (typeof successfunc === 'function') {
+      if (DoEncludeWaiting) {
+        CheckingincludeList.push([checkList, DebugInfo.FilePath, successfunc])
+        return
+      }
+
+      let allLoaded = true
+      for (let index = 0; index < checkList.length; index++) {
+        if (FileClassesMap[checkList[index]][0] !== true) {
+          allLoaded = false
+          break
+        }
+      }
+      if (allLoaded) {
+        DebugInfo.FilePath = myFilePath
+        successfunc(DebugInfo.FilePath)
+      } else {
+        DoEncludeWaiting = true
+        CheckingincludeList.push([checkList, DebugInfo.FilePath, successfunc])
       }
     }
   }
 
-  JSPP.ppexclude = function () {
-    let args = arguments
-    for (let key in args) {
-      let path = args[key]
+  JSPP.ppexclude = function (list) {
+    for (let index = 0; index < list.length; index++) {
+      let path = list[index]
       if (FileClassesMap[path]) {
-        for (let index in FileClassesMap[path]) {
-          distoryclass(FileClassesMap[path][index])
+        for (let index in FileClassesMap[path][1]) {
+          distoryclass(FileClassesMap[path][1][index])
         }
         delete FileClassesMap[path]
       }
     }
   }
 
-  JSPP.ppclass = function (classname, fathername, public, protected, private) {
+  JSPP.ppclass = function (classname, fathername, __public__, __protected__, __private__) {
     if (ClassTemplateMap[classname] !== undefined) {
       // 重定义类 :  classname
       if (DebugInfo.ObjDebugMode) {
@@ -874,17 +949,17 @@
       }
       return
     }
-    let _public = public
-    let _protected = protected
-    let _private = private
+    let _public = __public__
+    let _protected = __protected__
+    let _private = __private__
 
     if (fathername) {
       if (typeof fathername === 'string') {
         ClassFatherMap[classname] = fathername
-      } else if (typeof fathername === 'object' && private === undefined) {
+      } else if (typeof fathername === 'object' && __private__ === undefined) {
         // 省略父类参数传入
-        _private = protected
-        _protected = public
+        _private = __protected__
+        _protected = __public__
         _public = fathername
       } else {
         // 不支持的父类定义方式！
@@ -918,7 +993,7 @@
     ObjAliveCountMap[classname] = 0
 
     if (DebugInfo.FilePath) {
-      FileClassesMap[DebugInfo.FilePath].push(classname)
+      FileClassesMap[DebugInfo.FilePath][1].push(classname)
       ClassDefinedFile[classname] = DebugInfo.FilePath
     }
 
@@ -1015,9 +1090,13 @@
       })
 
       ret.__self.casters[key] = caster
+      //冻结限制意外修改操作
+      Object.freeze(caster)
     }
 
     ret.__self.casters[classname] = ret
+    //冻结限制意外修改操作
+    Object.freeze(ret)
 
     // 调用构造函数
     let args = []
@@ -1081,7 +1160,7 @@
   }
 
   JSPP.ppisObject = function (obj) {
-    return Boolean(obj.__self && obj.__class)
+    return Boolean(obj.__self && obj.__class && (!obj.__self.released))
   }
 
 })()

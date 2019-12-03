@@ -1,15 +1,15 @@
 //  Created by qupit in 2019/9/25.
 
-(function () {
+JSPP.ppinclude([
+  ':/PPComponent/EvtTools/EventDispacther.js'
+],function (__filepath__) {"use strict"
 
-  JSPP.ppinclude(
-    ':/PPComponent/EvtTools/EventDispacther.js'
-  )
+
 
   let GuildServerApi = include('Guild/ServerApi/GuildServerApi')
   let GuildUtil = include('Guild/Utils/GuildUtil')
 
-  let public = {
+  let __public__ = {
     static: {
       getInstance: function () {
         if (!this.instance) {
@@ -139,14 +139,14 @@
     }
   }
 
-  let protected = {
+  let __protected__ = {
     curStatisticsData: null,
     relationStatisticsData: null,
     expendStatisticsData: null
 
   }
 
-  let private = {
+  let __private__ = {
     static: {
       instance: null
     },
@@ -160,6 +160,6 @@
     dataEnd: false
   }
 
-  JSPP.ppclass('GuildRecordData', public, protected, private)
+  JSPP.ppclass('GuildRecordData', __public__, __protected__, __private__)
 
-})()
+})
